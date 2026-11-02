@@ -183,7 +183,7 @@
   #gbPoint .title { font-size: 15px; color: #f3e6c0; margin-top: 2px; font-weight: 600; }
   #gbPoint .obj { font-size: 12px; color: #b8c4a8; margin-top: 4px; }
 
-  /* ---- Responsive HUD + touch controls (phones) ---- */
+  /* ---- Responsive HUD (no on-screen game touch controls) ---- */
   @media (max-width: 900px), (pointer: coarse) {
     #hud { padding: 8px 10px; }
     .top-row { gap: 8px; font-size: 11px; flex-wrap: wrap; }
@@ -199,48 +199,46 @@
     #gbHud { top: auto; bottom: auto; margin-top: 58px; font-size: 11px; max-width: 94vw; }
     #companyHud { font-size: 11px !important; }
   }
-  #touchUI {
-    display: none; position: fixed; inset: 0; z-index: 15; pointer-events: none;
-    touch-action: none; user-select: none; -webkit-user-select: none;
+  /* Touch devices: PC-only notice (gameplay is keyboard+mouse) */
+  #pcOnlyNotice {
+    display: none; position: fixed; inset: 0; z-index: 40;
+    background: rgba(10,12,8,.94); color: #f3e6c0;
+    align-items: center; justify-content: center; padding: 24px;
+    text-align: center; font-family: Georgia, "Times New Roman", serif;
   }
-  #touchUI.show { display: block; }
-  #touchJoy {
-    pointer-events: auto; position: absolute; left: max(12px, env(safe-area-inset-left));
-    bottom: max(18px, env(safe-area-inset-bottom)); width: 128px; height: 128px;
-    border-radius: 50%; background: rgba(18,22,14,.35); border: 2px solid rgba(196,163,90,.4);
+  #pcOnlyNotice.show { display: flex; }
+  #pcOnlyNotice .card {
+    width: min(440px, 94vw); padding: 28px 22px;
+    border: 1px solid rgba(196,163,90,.45); background: rgba(18,22,14,.92);
+    border-radius: 6px;
   }
-  #touchJoyKnob {
-    position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px;
-    border-radius: 50%; background: rgba(196,163,90,.55); border: 1px solid rgba(243,230,192,.5);
+  #pcOnlyNotice h1 {
+    margin: 0 0 12px; font-size: 26px; letter-spacing: .04em; color: #f0d78a;
+    user-select: none; -webkit-user-select: none; touch-action: manipulation;
   }
-  #touchLook {
-    pointer-events: auto; position: absolute; right: 0; top: 18%; width: 46%; height: 52%;
-    background: transparent;
+  #pcOnlyNotice p { margin: 0 0 10px; font-size: 15px; line-height: 1.45; color: #c9d2b8; }
+  #pcOnlyNotice .sub { font-size: 12px; color: #8a9278; }
+  /* Hidden music panel — revealed via #music or long-press on notice title */
+  #musicPanel {
+    display: none; position: fixed; z-index: 45;
+    left: 50%; bottom: max(18px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: min(360px, 92vw); padding: 14px 16px;
+    background: rgba(18,22,14,.94); border: 1px solid rgba(196,163,90,.5);
+    border-radius: 8px; color: #f3e6c0; font-family: system-ui, sans-serif;
+    box-shadow: 0 8px 28px rgba(0,0,0,.45);
   }
-  .touchBtn {
-    pointer-events: auto; position: absolute; width: 58px; height: 58px; border-radius: 50%;
-    border: 1px solid rgba(196,163,90,.55); background: rgba(28,34,20,.72); color: #f3e6c0;
-    font: 600 11px/1.1 system-ui, sans-serif; text-align: center; touch-action: manipulation;
-    display: flex; align-items: center; justify-content: center; padding: 4px;
+  #musicPanel.show { display: block; }
+  #musicPanel .mp-title { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #c4a35a; margin-bottom: 6px; }
+  #musicPanel .mp-track { font-size: 14px; margin-bottom: 10px; min-height: 1.3em; color: #f3e6c0; }
+  #musicPanel .mp-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  #musicPanel button {
+    flex: 1; min-width: 90px; padding: 10px 12px; border-radius: 4px;
+    border: 1px solid rgba(196,163,90,.55); background: rgba(40,48,28,.9);
+    color: #f3e6c0; font-size: 14px; touch-action: manipulation; cursor: pointer;
   }
-  .touchBtn:active, .touchBtn.on { background: rgba(60,78,40,.9); border-color: #f0d78a; }
-  .touchBtn.wide { width: 72px; height: 44px; border-radius: 10px; font-size: 12px; }
-  #tbFire { right: max(18px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom)); width: 76px; height: 76px; font-size: 13px; background: rgba(100,40,28,.75); }
-  #tbAim { right: max(100px, calc(env(safe-area-inset-right) + 90px)); bottom: max(28px, env(safe-area-inset-bottom)); }
-  #tbReload { right: max(18px, env(safe-area-inset-right)); bottom: max(110px, calc(env(safe-area-inset-bottom) + 90px)); }
-  #tbSprint { left: max(150px, calc(env(safe-area-inset-left) + 140px)); bottom: max(28px, env(safe-area-inset-bottom)); }
-  #tbCrouch { left: max(150px, calc(env(safe-area-inset-left) + 140px)); bottom: max(96px, calc(env(safe-area-inset-bottom) + 70px)); }
-  #tbBandage { left: max(214px, calc(env(safe-area-inset-left) + 204px)); bottom: max(28px, env(safe-area-inset-bottom)); }
-  #tbMusic { left: max(214px, calc(env(safe-area-inset-left) + 204px)); bottom: max(96px, calc(env(safe-area-inset-bottom) + 70px)); }
-  #touchOrders {
-    pointer-events: none; position: absolute; left: 50%; transform: translateX(-50%);
-    bottom: max(8px, env(safe-area-inset-bottom)); display: none; gap: 4px; flex-wrap: wrap;
-    justify-content: center; max-width: 96vw;
-  }
-  #touchOrders.show { display: flex; }
-  #touchOrders .touchBtn { position: relative; left: auto; right: auto; bottom: auto; width: 40px; height: 40px; font-size: 10px; pointer-events: auto; }
-  #tbDraw { right: max(18px, env(safe-area-inset-right)); top: max(96px, calc(env(safe-area-inset-top) + 72px)); width: 70px; height: 44px; border-radius: 10px; }
-  #tbFlip { right: max(96px, calc(env(safe-area-inset-right) + 78px)); top: max(96px, calc(env(safe-area-inset-top) + 72px)); width: 70px; height: 44px; border-radius: 10px; }
+  #musicPanel button:active { background: rgba(70,88,40,.95); }
+  #musicPanel .mp-close { flex: 0 0 auto; min-width: 44px; opacity: .85; }
 </style>
 </head>
 <body>
@@ -337,27 +335,20 @@
 </div>
 <div id="gbPoint" aria-live="polite"><div class="day">Day 1 · Point 1</div><div class="title">McPherson’s Ridge</div><div class="obj">Form on the fence and hold</div></div>
 <div id="gbHud"></div>
-<div id="touchUI" aria-hidden="true">
-  <div id="touchJoy"><div id="touchJoyKnob"></div></div>
-  <div id="touchLook"></div>
-  <button type="button" class="touchBtn" id="tbFire">FIRE</button>
-  <button type="button" class="touchBtn" id="tbAim">AIM</button>
-  <button type="button" class="touchBtn" id="tbReload">RELOAD</button>
-  <button type="button" class="touchBtn" id="tbSprint">SPRINT</button>
-  <button type="button" class="touchBtn" id="tbCrouch">CROUCH</button>
-  <button type="button" class="touchBtn" id="tbBandage">BANDAGE</button>
-  <button type="button" class="touchBtn" id="tbMusic">MUSIC</button>
-  <button type="button" class="touchBtn wide" id="tbDraw" style="display:none">DRAW LINE</button>
-  <button type="button" class="touchBtn wide" id="tbFlip" style="display:none">FLIP FACE</button>
-  <div id="touchOrders">
-    <button type="button" class="touchBtn" data-order="ready">1 RDY</button>
-    <button type="button" class="touchBtn" data-order="commenceFire">2 OPEN</button>
-    <button type="button" class="touchBtn" data-order="ceaseFire">3 CEASE</button>
-    <button type="button" class="touchBtn" data-order="load">4 LOAD</button>
-    <button type="button" class="touchBtn" data-order="advanceToggle">5 ADV</button>
-    <button type="button" class="touchBtn" data-order="halt">6 HALT</button>
-    <button type="button" class="touchBtn" data-order="charge">7 CHG</button>
-    <button type="button" class="touchBtn" data-order="fallback">8 FALL</button>
+<div id="pcOnlyNotice" aria-live="polite">
+  <div class="card">
+    <h1 id="pcOnlyTitle">War of the States</h1>
+    <p>This game is playable on PC with keyboard and mouse.</p>
+    <p class="sub">Open it on a computer to lead the company on the field.</p>
+  </div>
+</div>
+<div id="musicPanel" aria-hidden="true">
+  <div class="mp-title">Battle music</div>
+  <div class="mp-track" id="mpTrackLabel">Battle Cry of Freedom (1914)</div>
+  <div class="mp-row">
+    <button type="button" id="mpPlayPause">Pause</button>
+    <button type="button" id="mpNext">Next track</button>
+    <button type="button" class="mp-close" id="mpClose" title="Hide">✕</button>
   </div>
 </div>
 
@@ -541,8 +532,8 @@
       osc.start(t); osc.stop(t + 0.3);
     },
 
-    // Battle music — continuous multi-track HTMLAudio (+ WebAudio on mobile).
-    // Only M / MUSIC cycles tracks or turns music off; never pause on points/menus.
+    // Battle music — continuous multi-track HTMLAudio (+ WebAudio on coarse pointers).
+    // Loads on every device. M / panel cycles tracks; never pause on points/menus.
     battleTracks: [
       { id: "battlecry", src: "audio/battle_cry_of_freedom_1914.mp3", label: "Battle Cry of Freedom (1914)" },
       { id: "memories", src: "audio/memories_of_the_war_1915.mp3", label: "Memories of the War (1915)" }
@@ -634,6 +625,7 @@
       });
     },
     tryAutoplayBattle: function () {
+      // Music loads on every device (PC + phone). Gameplay itself is PC-only.
       this.battleUnlocked = true;
       if (this.isMobileish()) this.battleUseWebAudio = true;
       this.ensure();
@@ -651,6 +643,26 @@
       var a = this.ensureBattle();
       if (a) this._playBattleEl(a);
     },
+    setBattlePlaying: function (wantPlay) {
+      if (!wantPlay) {
+        this.battleEnabled = false;
+        this.pauseAllBattle();
+        this.battlePendingPlay = false;
+        return { enabled: false, label: "Music off", playing: false };
+      }
+      this.battleEnabled = true;
+      if (this.battleTrackIndex >= this.battleTracks.length) this.battleTrackIndex = 0;
+      var a = this.ensureBattle();
+      if (a) this._playBattleEl(a);
+      return { enabled: true, label: this.battleLabel(), playing: true };
+    },
+    syncMusicPanel: function () {
+      var label = document.getElementById("mpTrackLabel");
+      var btn = document.getElementById("mpPlayPause");
+      var playing = !!(this.battleEnabled && this.battle && !this.battle.paused);
+      if (label) label.textContent = this.battleEnabled ? this.battleLabel() : "Music off";
+      if (btn) btn.textContent = playing ? "Pause" : "Play";
+    },
     // Kept for older callers — music is continuous; this only ensures playback.
     startBattleMusic: function () {
       if (!this.battleEnabled) return;
@@ -665,6 +677,7 @@
         this.battleEnabled = false;
         this.battle = null;
         this.battlePendingPlay = false;
+        this.syncMusicPanel();
         return { enabled: false, label: "Music off" };
       }
       this.battleEnabled = true;
@@ -673,6 +686,7 @@
         try { a.currentTime = 0; } catch (e) {}
         this._playBattleEl(a);
       }
+      this.syncMusicPanel();
       return { enabled: true, label: this.battleLabel() };
     },
     toggleBattleMusic: function () {
@@ -4047,6 +4061,12 @@
       }
     }
     if (e.code === "Escape") document.exitPointerLock();
+    // M cycles battle music on any device / even at the menu
+    if (e.code === "KeyM") {
+      var r = audio.cycleBattleMusic();
+      state.orderText = r.label + " (M)";
+      audio.syncMusicPanel();
+    }
     if (!state.running || state.role !== "officer") return;
     if (e.code === "Digit1" || e.code === "Numpad1") issueCompanyOrder("ready");
     if (e.code === "Digit2" || e.code === "Numpad2") issueCompanyOrder("commenceFire");
@@ -4056,12 +4076,6 @@
     if (e.code === "Digit6" || e.code === "Numpad6") issueCompanyOrder("halt");
     if (e.code === "Digit7" || e.code === "Numpad7") issueCompanyOrder("charge");
     if (e.code === "Digit8" || e.code === "Numpad8") issueCompanyOrder("fallback");
-    if (e.code === "KeyM") {
-      var r = audio.cycleBattleMusic();
-      state.orderText = r.label + " (M)";
-      var tm = document.getElementById("tbMusic");
-      if (tm) tm.classList.toggle("on", r.enabled);
-    }
     if (e.code === "KeyF") {
       var now = performance.now();
       if (state._lastF && now - state._lastF < 350) {
@@ -6678,144 +6692,121 @@
   var _applyDamageBase = null;
 
 
-  // ---- Touch / phone controls (shown only on coarse pointers) ----
+  // ---- PC-only gameplay gate (no on-screen touch game controls) ----
   state.touchMove = state.touchMove || { x: 0, y: 0 };
-  (function initTouchUI() {
-    var ui = document.getElementById("touchUI");
-    if (!ui) return;
-    var coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-    var touchCapable = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    state.isTouchUI = !!(coarse || (touchCapable && Math.min(screen.width, screen.height) < 900));
-    if (!state.isTouchUI) return;
-    ui.classList.add("show");
-    document.body.style.touchAction = "none";
-    // Graceful pointer-lock fallback
-    var _rpl = Element.prototype.requestPointerLock || Element.prototype.mozRequestPointerLock;
-    if (_rpl) {
-      Element.prototype.requestPointerLock = function () {
-        try { return _rpl.apply(this, arguments); } catch (e) { return null; }
+  state.isTouchUI = false;
+  (function initPcOnlyAndMusicPanel() {
+    function isTouchPrimary() {
+      try {
+        var coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+        var touchCapable = "ontouchstart" in window || (navigator.maxTouchPoints || 0) > 0;
+        var small = Math.min(screen.width || 0, screen.height || 0) < 900;
+        return !!(coarse || (touchCapable && small));
+      } catch (e) { return false; }
+    }
+    state.isTouchUI = isTouchPrimary();
+
+    var notice = document.getElementById("pcOnlyNotice");
+    var panel = document.getElementById("musicPanel");
+    var title = document.getElementById("pcOnlyTitle");
+    var overlay = document.getElementById("overlay");
+
+    function showMusicPanel() {
+      if (!panel) return;
+      panel.classList.add("show");
+      panel.setAttribute("aria-hidden", "false");
+      audio.unlockBattle();
+      audio.syncMusicPanel();
+    }
+    function hideMusicPanel() {
+      if (!panel) return;
+      panel.classList.remove("show");
+      panel.setAttribute("aria-hidden", "true");
+    }
+    window.__showMusicPanel = showMusicPanel;
+    window.__hideMusicPanel = hideMusicPanel;
+
+    // #music hash opens the panel on any device (desktop or phone)
+    function checkMusicHash() {
+      try {
+        if ((location.hash || "").toLowerCase() === "#music") showMusicPanel();
+      } catch (e) {}
+    }
+    checkMusicHash();
+    window.addEventListener("hashchange", checkMusicHash);
+
+    if (state.isTouchUI && notice) {
+      notice.classList.add("show");
+      if (overlay) overlay.classList.add("hidden");
+      // Block starting the 3D game on touch-primary devices
+      var block = function (e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        notice.classList.add("show");
+        return false;
       };
-    }
-    var joy = document.getElementById("touchJoy");
-    var knob = document.getElementById("touchJoyKnob");
-    var look = document.getElementById("touchLook");
-    var joyId = null, lookId = null, joyCx = 0, joyCy = 0;
-    function setKnob(dx, dy) {
-      var m = Math.hypot(dx, dy) || 1;
-      var r = Math.min(46, m);
-      knob.style.transform = "translate(" + (dx / m * r) + "px," + (dy / m * r) + "px)";
-    }
-    joy.addEventListener("touchstart", function (e) {
-      e.preventDefault();
-      var t = e.changedTouches[0];
-      joyId = t.identifier;
-      var rect = joy.getBoundingClientRect();
-      joyCx = rect.left + rect.width / 2;
-      joyCy = rect.top + rect.height / 2;
-    }, { passive: false });
-    joy.addEventListener("touchmove", function (e) {
-      e.preventDefault();
-      for (var i = 0; i < e.changedTouches.length; i++) {
-        var t = e.changedTouches[i];
-        if (t.identifier !== joyId) continue;
-        var dx = t.clientX - joyCx, dy = t.clientY - joyCy;
-        var m = Math.hypot(dx, dy) || 1;
-        var nx = dx / Math.max(46, m), ny = dy / Math.max(46, m);
-        state.touchMove.x = Math.max(-1, Math.min(1, nx));
-        state.touchMove.y = Math.max(-1, Math.min(1, -ny));
-        setKnob(dx, dy);
+      ["startOfficer", "startGettysburg", "hostOfficer", "joinShow", "joinGo", "hostEnterField"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("click", block, true);
+      });
+      // Long-press (~2s) on the title reveals the hidden music player
+      if (title) {
+        var pressTimer = null;
+        var arm = function (e) {
+          if (pressTimer) clearTimeout(pressTimer);
+          pressTimer = setTimeout(function () {
+            pressTimer = null;
+            showMusicPanel();
+            audio.unlockBattle();
+          }, 2000);
+        };
+        var cancel = function () {
+          if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        };
+        title.addEventListener("touchstart", arm, { passive: true });
+        title.addEventListener("mousedown", arm);
+        title.addEventListener("touchend", cancel);
+        title.addEventListener("touchcancel", cancel);
+        title.addEventListener("mouseup", cancel);
+        title.addEventListener("mouseleave", cancel);
       }
-    }, { passive: false });
-    function endJoy(e) {
-      for (var i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === joyId) {
-          joyId = null; state.touchMove.x = 0; state.touchMove.y = 0;
-          knob.style.transform = "translate(0,0)";
+    }
+
+    // Music panel controls (phone hidden player + desktop #music)
+    var playBtn = document.getElementById("mpPlayPause");
+    var nextBtn = document.getElementById("mpNext");
+    var closeBtn = document.getElementById("mpClose");
+    if (playBtn) {
+      playBtn.addEventListener("click", function () {
+        audio.unlockBattle();
+        var playing = !!(audio.battleEnabled && audio.battle && !audio.battle.paused);
+        if (playing) {
+          audio.setBattlePlaying(false);
+        } else {
+          audio.setBattlePlaying(true);
         }
-      }
-    }
-    joy.addEventListener("touchend", endJoy); joy.addEventListener("touchcancel", endJoy);
-    var lookLX = 0, lookLY = 0;
-    look.addEventListener("touchstart", function (e) {
-      e.preventDefault();
-      var t = e.changedTouches[0];
-      lookId = t.identifier; lookLX = t.clientX; lookLY = t.clientY;
-      state.touchLookActive = true;
-    }, { passive: false });
-    look.addEventListener("touchmove", function (e) {
-      e.preventDefault();
-      for (var i = 0; i < e.changedTouches.length; i++) {
-        var t = e.changedTouches[i];
-        if (t.identifier !== lookId) continue;
-        var dx = t.clientX - lookLX, dy = t.clientY - lookLY;
-        lookLX = t.clientX; lookLY = t.clientY;
-        state.yaw -= dx * 0.005;
-        state.pitch -= dy * 0.004;
-        state.pitch = Math.max(-1.2, Math.min(1.2, state.pitch));
-      }
-    }, { passive: false });
-    function endLook(e) {
-      for (var i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === lookId) { lookId = null; state.touchLookActive = false; }
-      }
-    }
-    look.addEventListener("touchend", endLook); look.addEventListener("touchcancel", endLook);
-    function holdBtn(id, on, off) {
-      var el = document.getElementById(id); if (!el) return;
-      el.addEventListener("touchstart", function (e) { e.preventDefault(); el.classList.add("on"); on(); }, { passive: false });
-      el.addEventListener("touchend", function (e) { e.preventDefault(); el.classList.remove("on"); if (off) off(); });
-      el.addEventListener("touchcancel", function () { el.classList.remove("on"); if (off) off(); });
-    }
-    holdBtn("tbFire", function () { if (state.running) tryFire(); });
-    holdBtn("tbAim", function () { state.aiming = true; }, function () { state.aiming = false; });
-    holdBtn("tbReload", function () { beginReload(); });
-    holdBtn("tbSprint", function () { state.touchSprint = true; }, function () { state.touchSprint = false; });
-    holdBtn("tbCrouch", function () { state._crouchSticky = !state._crouchSticky; });
-    holdBtn("tbBandage", function () { beginBandage(); });
-    holdBtn("tbMusic", function () {
-      var r = audio.cycleBattleMusic();
-      var tm = document.getElementById("tbMusic");
-      if (tm) tm.classList.toggle("on", r.enabled);
-      state.orderText = r.label;
-    });
-    var orders = document.getElementById("touchOrders");
-    function syncOfficerTouch() {
-      var off = state.role === "officer";
-      if (orders) orders.classList.toggle("show", off && state.running);
-      var d = document.getElementById("tbDraw");
-      var f = document.getElementById("tbFlip");
-      if (d) d.style.display = off ? "flex" : "none";
-      if (f) f.style.display = off ? "flex" : "none";
-    }
-    setInterval(syncOfficerTouch, 500);
-    if (orders) {
-      orders.querySelectorAll("[data-order]").forEach(function (btn) {
-        btn.addEventListener("touchstart", function (e) {
-          e.preventDefault();
-          issueCompanyOrder(btn.getAttribute("data-order"));
-        }, { passive: false });
+        audio.syncMusicPanel();
       });
     }
-    var drawing = false;
-    holdBtn("tbDraw", function () {
-      if (state.role !== "officer") return;
-      drawing = true;
-      beginDrawLine(window.innerWidth * 0.5, window.innerHeight * 0.55);
-    }, function () {
-      if (drawing) { endDrawLine(); drawing = false; }
-    });
-    look.addEventListener("touchmove", function (e) {
-      if (!drawing || !state.drawingLine) return;
-      var t = e.changedTouches[0];
-      updateDrawLine(t.clientX, t.clientY);
-    }, { passive: false });
-    holdBtn("tbFlip", function () { flipFormFacing(); });
-    // Show touch UI when game running
-    var _obs = setInterval(function () {
-      if (state.running) ui.classList.add("show");
-    }, 400);
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        audio.unlockBattle();
+        // Skip "off" when using the panel next button — cycle 1914 <-> 1915 only
+        if (!audio.battleEnabled || audio.battleTrackIndex >= audio.battleTracks.length) {
+          audio.battleTrackIndex = 0;
+          audio.setBattlePlaying(true);
+        } else {
+          audio.pauseAllBattle();
+          audio.battleTrackIndex = (audio.battleTrackIndex + 1) % audio.battleTracks.length;
+          audio.battleEnabled = true;
+          var a = audio.ensureBattle();
+          if (a) { try { a.currentTime = 0; } catch (e) {} audio._playBattleEl(a); }
+        }
+        audio.syncMusicPanel();
+      });
+    }
+    if (closeBtn) closeBtn.addEventListener("click", hideMusicPanel);
   })();
-
 
   // Continuous battle music: try autoplay on load; retry on first gesture if blocked.
   (function bindBattleMusicContinuous() {
@@ -6835,6 +6826,7 @@
   })();
   window.__WOTS__ = {
     net: net,
+    audio: audio,
     getState: function () { return state; },
     hostStart: hostStart,
     joinStart: joinStart,
