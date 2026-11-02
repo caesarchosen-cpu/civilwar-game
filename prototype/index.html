@@ -151,6 +151,43 @@
   }
   #deathScreen.show { display: flex; }
   #overlay input:focus { outline: 1px solid var(--brass); }
+  .menu-view { display: none; }
+  .menu-view.active { display: block; }
+  .menu-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .menu-stack button, .menu-row button {
+    width: 100%; text-align: left; padding: 12px 16px;
+  }
+  .menu-stack button.secondary, .menu-back {
+    background: #1e2618; opacity: .95;
+  }
+  .menu-note {
+    font-size: 12px; color: #d4a060; background: rgba(80,50,10,.25);
+    border: 1px solid rgba(196,163,90,.35); padding: 10px 12px; border-radius: 4px; margin: 10px 0;
+  }
+  .vol-row {
+    display: grid; grid-template-columns: 120px 1fr 42px; gap: 10px; align-items: center;
+    margin: 8px 0; font-size: 13px; color: var(--ink);
+  }
+  .vol-row input[type=range] { width: 100%; accent-color: #c4a35a; }
+  .bind-row {
+    display: grid; grid-template-columns: 1fr 140px; gap: 8px; align-items: center;
+    margin: 6px 0; font-size: 13px;
+  }
+  .bind-row button.bind-btn {
+    text-align: center; padding: 8px 10px; font-size: 13px; letter-spacing: .04em;
+  }
+  .bind-row button.bind-btn.listening {
+    background: #5a4020; border-color: #f0d78a; animation: pulseBind 1s infinite;
+  }
+  @keyframes pulseBind { 50% { opacity: .7; } }
+  #pauseOverlay {
+    position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(20,24,14,.72), rgba(4,6,4,.92));
+    z-index: 28; pointer-events: auto;
+  }
+  #pauseOverlay.show { display: flex; }
+  #pauseOverlay .card { width: min(480px, 94vw); }
+
   #mpBanner.show { display: block !important; }
   #gbCourier {
     display: none; position: fixed; inset: 0; z-index: 22;
@@ -288,43 +325,118 @@
 </div>
 <div id="overlay">
   <div class="card" id="overlayCard" style="width:min(560px,94vw)">
-    <h1>War of the States</h1>
-    <p class="sub">Field prototype · officer single-player · host-authoritative multiplayer</p>
-    <p>Single-player always puts you in as the <b>officer</b>. Host as Officer creates a room; joiners spawn as Union Privates under that officer. Empty slots are AI; Confederates are AI.</p>
-    <ul>
-      <li><b>Solo Infantry Officer</b> — offline; command the company (orders 1–9 / F line)</li>
-      <li><b>Solo Artillery Officer</b> — offline; command <b>Calef's Battery A, 2nd U.S.</b> (six 3-inch Ordnance Rifles); infantry AI skirmishes</li>
-      <li><b>Gettysburg Day One</b> — continuous field, three Points; you are the infantry officer</li>
-      <li><b>Host as Officer</b> — creates room code · LAN address shown</li>
-      <li><b>Join</b> — enter server + room code · Union Private only</li>
-    </ul>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
-      <button type="button" id="startOfficer">Solo Infantry Officer</button>
-      <button type="button" id="startArtillery">Solo Artillery Officer</button>
-      <button type="button" id="startGettysburg">Gettysburg Day One</button>
-      <button type="button" id="hostOfficer">Host as Officer</button>
-      <button type="button" id="joinShow">Join Game…</button>
+    <!-- MAIN -->
+    <div class="menu-view active" data-view="main">
+      <h1>War of the States</h1>
+      <p class="sub">Gettysburg field prototype · PC keyboard &amp; mouse</p>
+      <div class="menu-stack">
+        <button type="button" id="menuSinglePlayer">Single Player</button>
+        <button type="button" id="menuMultiplayer">Multiplayer</button>
+        <button type="button" id="menuOptions">Options</button>
+        <button type="button" id="menuControls">Controls</button>
+      </div>
     </div>
-    <div id="hostPanel" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid rgba(196,163,90,.35)">
-      <p class="sub" style="margin-bottom:6px">Hosting… share this with joiners</p>
-      <p>Room code: <strong id="hostRoomCode" style="font-size:22px;letter-spacing:.12em;color:#f3e6c0">————</strong></p>
-      <p style="font-size:13px;color:var(--muted)">Open: <span id="hostUrl">—</span></p>
-      <p style="font-size:12px;color:var(--muted)">Share link: <span id="hostShare" style="color:#f3e6c0;word-break:break-all">—</span></p>
-      <p style="font-size:12px;color:var(--muted)" id="hostLan">LAN: —</p>
-      <p style="font-size:12px;color:var(--muted)" id="hostStatus">Connecting…</p>
-      <button type="button" id="hostEnterField" style="margin-top:8px">Enter the Field</button>
+    <!-- SINGLE PLAYER ROLE SELECT -->
+    <div class="menu-view" data-view="single">
+      <h1>Single Player</h1>
+      <p class="sub">Choose your role, then enter the field</p>
+      <div class="menu-stack">
+        <button type="button" id="startOfficer" class="menuStartBtn">Infantry Officer — company orders (1–9 / F)</button>
+        <button type="button" id="startArtillery" class="menuStartBtn">Artillery Officer — Calef's Battery A (6× 3″ rifles)</button>
+        <button type="button" id="startGettysburg" class="menuStartBtn">Gettysburg Day One — infantry officer, three Points</button>
+        <button type="button" id="startSpectator" class="menuStartBtn">Spectator — free camera, no orders</button>
+        <button type="button" class="menu-back" data-back="main">Back</button>
+      </div>
     </div>
-    <div id="joinPanel" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid rgba(196,163,90,.35)">
-      <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">Server (host:port or full URL)</label>
-      <input id="joinHost" type="text" value="127.0.0.1:8787" style="width:100%;padding:8px;border-radius:3px;border:1px solid rgba(196,163,90,.4);background:#1a2016;color:var(--ink);margin-bottom:8px" />
-      <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">Room code</label>
-      <input id="joinRoom" type="text" maxlength="6" placeholder="ABCDE" style="width:100%;padding:8px;border-radius:3px;border:1px solid rgba(196,163,90,.4);background:#1a2016;color:var(--ink);margin-bottom:8px;text-transform:uppercase;letter-spacing:.1em" />
-      <p style="font-size:12px;color:var(--muted)">Side: Union Private (officer slot is the host)</p>
-      <p style="font-size:12px;color:#d4a060" id="joinStatus"></p>
-      <button type="button" id="joinGo">Join Union Line</button>
+    <!-- MULTIPLAYER -->
+    <div class="menu-view" data-view="multi">
+      <h1>Multiplayer</h1>
+      <p class="sub">Host-authoritative rooms · Union officer host / private joiners</p>
+      <div class="menu-note" id="mpNotHostedNote">Multiplayer server not hosted yet on GitHub Pages. You can still open Host/Join against a local or self-hosted WebSocket server (default <code>127.0.0.1:8787</code>). Without a server, connection will fail — that is expected here.</div>
+      <div class="menu-stack">
+        <button type="button" id="hostOfficer" class="menuStartBtn">Host as Officer</button>
+        <button type="button" id="joinShow" class="menuStartBtn">Join Game…</button>
+        <button type="button" class="menu-back" data-back="main">Back</button>
+      </div>
+      <div id="hostPanel" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid rgba(196,163,90,.35)">
+        <p class="sub" style="margin-bottom:6px">Hosting… share this with joiners</p>
+        <p>Room code: <strong id="hostRoomCode" style="font-size:22px;letter-spacing:.12em;color:#f3e6c0">————</strong></p>
+        <p style="font-size:13px;color:var(--muted)">Open: <span id="hostUrl">—</span></p>
+        <p style="font-size:12px;color:var(--muted)">Share link: <span id="hostShare" style="color:#f3e6c0;word-break:break-all">—</span></p>
+        <p style="font-size:12px;color:var(--muted)" id="hostLan">LAN: —</p>
+        <p style="font-size:12px;color:var(--muted)" id="hostStatus">Connecting…</p>
+        <button type="button" id="hostEnterField" class="menuStartBtn" style="margin-top:8px">Enter the Field</button>
+      </div>
+      <div id="joinPanel" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid rgba(196,163,90,.35)">
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">Server (host:port or full URL)</label>
+        <input id="joinHost" type="text" value="127.0.0.1:8787" style="width:100%;padding:8px;border-radius:3px;border:1px solid rgba(196,163,90,.4);background:#1a2016;color:var(--ink);margin-bottom:8px" />
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">Room code</label>
+        <input id="joinRoom" type="text" maxlength="6" placeholder="ABCDE" style="width:100%;padding:8px;border-radius:3px;border:1px solid rgba(196,163,90,.4);background:#1a2016;color:var(--ink);margin-bottom:8px;text-transform:uppercase;letter-spacing:.1em" />
+        <p style="font-size:12px;color:var(--muted)">Side: Union Private (officer slot is the host)</p>
+        <p style="font-size:12px;color:#d4a060" id="joinStatus"></p>
+        <button type="button" id="joinGo" class="menuStartBtn">Join Union Line</button>
+      </div>
+    </div>
+    <!-- OPTIONS (shared markup cloned into pause) -->
+    <div class="menu-view" data-view="options">
+      <h1>Options</h1>
+      <p class="sub">Volume — saved on this browser</p>
+      <div id="optionsVolumeMount"></div>
+      <div class="menu-stack" style="margin-top:14px">
+        <button type="button" class="menu-back" data-back="main">Back</button>
+      </div>
+    </div>
+    <!-- CONTROLS -->
+    <div class="menu-view" data-view="controls">
+      <h1>Controls</h1>
+      <p class="sub">Click a binding, then press a key · Esc cancels</p>
+      <div id="controlsBindMount" style="max-height:50vh;overflow:auto;padding-right:4px"></div>
+      <div class="menu-stack" style="margin-top:12px">
+        <button type="button" id="controlsReset">Reset to defaults</button>
+        <button type="button" class="menu-back" data-back="main">Back</button>
+      </div>
     </div>
   </div>
 </div>
+<div id="pauseOverlay" aria-hidden="true">
+  <div class="card" id="pauseCard">
+    <div class="menu-view active" data-pause-view="root">
+      <h1>Paused</h1>
+      <p class="sub">Simulation frozen</p>
+      <div class="menu-stack">
+        <button type="button" id="pauseResume">Resume</button>
+        <button type="button" id="pauseOptions">Options</button>
+        <button type="button" id="pauseControls">Controls</button>
+        <button type="button" id="pauseQuit" class="secondary">Quit to Main Menu</button>
+      </div>
+    </div>
+    <div class="menu-view" data-pause-view="options">
+      <h1>Options</h1>
+      <p class="sub">Volume</p>
+      <div id="pauseOptionsMount"></div>
+      <div class="menu-stack" style="margin-top:14px">
+        <button type="button" id="pauseOptionsBack" class="menu-back">Back</button>
+      </div>
+    </div>
+    <div class="menu-view" data-pause-view="controls">
+      <h1>Controls</h1>
+      <p class="sub">Click a binding, then press a key</p>
+      <div id="pauseControlsMount" style="max-height:45vh;overflow:auto"></div>
+      <div class="menu-stack" style="margin-top:12px">
+        <button type="button" id="pauseControlsReset">Reset to defaults</button>
+        <button type="button" id="pauseControlsBack" class="menu-back">Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+<template id="tmplVolumeSliders">
+  <div class="vol-row"><label>Master</label><input type="range" min="0" max="100" data-vol="master" /><span data-vol-label="master">100</span></div>
+  <div class="vol-row"><label>Music</label><input type="range" min="0" max="100" data-vol="music" /><span data-vol-label="music">100</span></div>
+  <div class="vol-row"><label>Effects</label><input type="range" min="0" max="100" data-vol="effects" /><span data-vol-label="effects">100</span></div>
+  <div class="vol-row"><label>Unit sounds</label><input type="range" min="0" max="100" data-vol="units" /><span data-vol-label="units">100</span></div>
+  <div class="vol-row"><label>Gunfire</label><input type="range" min="0" max="100" data-vol="gunfire" /><span data-vol-label="gunfire">100</span></div>
+</template>
+
 <div id="mpBanner" style="display:none;position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:18;background:rgba(18,22,14,.85);border:1px solid rgba(196,163,90,.4);padding:6px 14px;border-radius:4px;font-size:12px;pointer-events:none;color:var(--ink)"></div>
 <div id="gbCourier" aria-live="polite">
   <div class="card">
@@ -439,12 +551,73 @@
     ctx: null,
     master: null,
     drumTimer: 0,
+    // Volume categories (0..1), persisted via menu Options
+    masterVol: 1,
+    musicVol: 1,
+    effectsVol: 1,
+    unitsVol: 1,
+    gunfireVol: 1,
+    // Bus nodes: master <- effects/units/gunfire/musicGain; HTMLAudio music uses battleBaseVol
+    effects: null,
+    units: null,
+    gunfire: null,
+    musicGain: null,
+    ambient: { running: false, timer: null, fading: false },
     ensure: function () {
       if (this.ctx) return;
       this.ctx = new AudioCtx();
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.35;
+      this.effects = this.ctx.createGain();
+      this.units = this.ctx.createGain();
+      this.gunfire = this.ctx.createGain();
+      this.musicGain = this.ctx.createGain();
+      this.ambientGain = this.ctx.createGain();
+      this.effects.connect(this.master);
+      this.units.connect(this.master);
+      this.gunfire.connect(this.master);
+      this.musicGain.connect(this.master);
+      this.ambientGain.connect(this.master);
+      this.ambientGain.gain.value = 0.55;
       this.master.connect(this.ctx.destination);
+      this.applyAllVolumes();
+    },
+    applyAllVolumes: function () {
+      if (!this.master) return;
+      this.master.gain.value = 0.35 * (this.masterVol != null ? this.masterVol : 1);
+      if (this.effects) this.effects.gain.value = this.effectsVol != null ? this.effectsVol : 1;
+      if (this.units) this.units.gain.value = this.unitsVol != null ? this.unitsVol : 1;
+      if (this.gunfire) this.gunfire.gain.value = this.gunfireVol != null ? this.gunfireVol : 1;
+      if (this.musicGain) this.musicGain.gain.value = this.musicVol != null ? this.musicVol : 1;
+      // HTMLAudio path (non-WebAudio route)
+      this.battleBaseVol = 0.6 * (this.musicVol != null ? this.musicVol : 1);
+      this.applyBattleVolume(1);
+    },
+    setCategoryVolume: function (cat, v01) {
+      v01 = Math.max(0, Math.min(1, v01));
+      if (cat === "master") this.masterVol = v01;
+      else if (cat === "music") this.musicVol = v01;
+      else if (cat === "effects") this.effectsVol = v01;
+      else if (cat === "units") this.unitsVol = v01;
+      else if (cat === "gunfire") this.gunfireVol = v01;
+      this.ensure();
+      this.applyAllVolumes();
+      // WebAudio-routed battle media element gains
+      var nodes = this.battleNodes || {};
+      Object.keys(nodes).forEach(function (id) {
+        if (nodes[id] && nodes[id].gain) nodes[id].gain.gain.value = 1;
+      });
+    },
+    bus: function (name) {
+      this.ensure();
+      // While menu ambient is active, route distant bed through ambientGain so it can fade out
+      if (this.ambient && this.ambient.running && (name === "gunfire" || name === "units" || name === "effects")) {
+        return this.ambientGain;
+      }
+      if (name === "gunfire") return this.gunfire;
+      if (name === "units") return this.units;
+      if (name === "music") return this.musicGain;
+      if (name === "ambient") return this.ambientGain;
+      return this.effects;
     },
     resume: function () {
       this.ensure();
@@ -470,7 +643,7 @@
       var g = this.ctx.createGain();
       g.gain.setValueAtTime((distant ? 0.15 : 0.55) * (0.85 + Math.random() * 0.3), t);
       g.gain.exponentialRampToValueAtTime(0.001, t + (distant ? 0.35 : 0.18));
-      src.connect(bp); bp.connect(g); g.connect(this.master);
+      src.connect(bp); bp.connect(g); g.connect(this.bus("gunfire"));
       src.start(t); src.stop(t + 0.4);
       // low thump
       var osc = this.ctx.createOscillator();
@@ -480,7 +653,7 @@
       var og = this.ctx.createGain();
       og.gain.setValueAtTime(distant ? 0.08 : 0.25, t);
       og.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
-      osc.connect(og); og.connect(this.master);
+      osc.connect(og); og.connect(this.bus("gunfire"));
       osc.start(t); osc.stop(t + 0.16);
       this.duckBattle(0.55);
     },
@@ -503,7 +676,7 @@
       var g = this.ctx.createGain();
       g.gain.setValueAtTime(0.22, t);
       g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
-      src.connect(hp); hp.connect(g); g.connect(this.master);
+      src.connect(hp); hp.connect(g); g.connect(this.bus("units"));
       src.start(t); src.stop(t + 0.1);
       var osc = this.ctx.createOscillator();
       osc.type = "sine";
@@ -512,7 +685,7 @@
       var og = this.ctx.createGain();
       og.gain.setValueAtTime(0.1, t);
       og.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
-      osc.connect(og); og.connect(this.master);
+      osc.connect(og); og.connect(this.bus("units"));
       osc.start(t); osc.stop(t + 0.15);
     },
 
@@ -526,7 +699,7 @@
       var g = this.ctx.createGain();
       g.gain.setValueAtTime(distant ? 0.35 : 0.7, t);
       g.gain.exponentialRampToValueAtTime(0.001, t + (distant ? 1.2 : 0.85));
-      src.connect(lp); lp.connect(g); g.connect(this.master);
+      src.connect(lp); lp.connect(g); g.connect(this.bus("gunfire"));
       src.start(t); src.stop(t + 1.3);
       var osc = this.ctx.createOscillator();
       osc.type = "sine";
@@ -535,7 +708,7 @@
       var og = this.ctx.createGain();
       og.gain.setValueAtTime(distant ? 0.2 : 0.4, t);
       og.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
-      osc.connect(og); og.connect(this.master);
+      osc.connect(og); og.connect(this.bus("gunfire"));
       osc.start(t); osc.stop(t + 0.65);
       this.duckBattle(0.9);
     },
@@ -552,7 +725,7 @@
         g.gain.setValueAtTime(0.0001, tt);
         g.gain.exponentialRampToValueAtTime(0.08, tt + 0.01);
         g.gain.exponentialRampToValueAtTime(0.001, tt + 0.06);
-        src.connect(bp); bp.connect(g); g.connect(this.master);
+        src.connect(bp); bp.connect(g); g.connect(this.bus("units"));
         src.start(tt); src.stop(tt + 0.07);
       }
     },
@@ -573,7 +746,7 @@
       g.gain.setValueAtTime(0.0001, t);
       g.gain.exponentialRampToValueAtTime(0.05, t + 0.03);
       g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
-      osc.connect(bp); bp.connect(g); g.connect(this.master);
+      osc.connect(bp); bp.connect(g); g.connect(this.bus("units"));
       osc.start(t); osc.stop(t + 0.3);
     },
 
@@ -628,7 +801,7 @@
         var g = this.ctx.createGain();
         g.gain.value = 1;
         src.connect(g);
-        g.connect(this.master);
+        g.connect(this.bus("music"));
         this.battleNodes[trackId] = { src: src, gain: g };
       } catch (e) {
         // Already connected or unsupported
@@ -637,7 +810,7 @@
     applyBattleVolume: function (mul) {
       if (mul == null) mul = 1;
       if (this.battle) {
-        try { this.battle.volume = Math.max(0.08, this.battleBaseVol * mul); } catch (e) {}
+        try { this.battle.volume = Math.max(0, this.battleBaseVol * mul); } catch (e) {}
       }
     },
     _playBattleEl: function (a) {
@@ -776,7 +949,7 @@
         g.gain.setValueAtTime(0.0001, t);
         g.gain.exponentialRampToValueAtTime(0.08, t + 0.03);
         g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-        osc.connect(bp); bp.connect(g); g.connect(this.master);
+        osc.connect(bp); bp.connect(g); g.connect(this.bus("units"));
         osc.start(t); osc.stop(t + 0.36);
       }
       this.drumPulse();
@@ -793,8 +966,70 @@
       var g = this.ctx.createGain();
       g.gain.setValueAtTime(0.4, t);
       g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-      src.connect(bp); bp.connect(g); g.connect(this.master);
+      src.connect(bp); bp.connect(g); g.connect(this.bus("gunfire"));
       src.start(t); src.stop(t + 0.13);
+    },
+
+    // ---- Menu ambient distant-battle soundscape (WebAudio only) ----
+    startMenuAmbient: function () {
+      this.ensure();
+      if (this.ambient.running) return;
+      this.ambient.running = true;
+      this.ambient.fading = false;
+      if (this.ambientGain) {
+        try {
+          this.ambientGain.gain.cancelScheduledValues(this.ctx.currentTime);
+          this.ambientGain.gain.setValueAtTime(0.55 * (this.effectsVol != null ? this.effectsVol : 1), this.ctx.currentTime);
+        } catch (e) { this.ambientGain.gain.value = 0.55; }
+      }
+      var self = this;
+      function schedule() {
+        if (!self.ambient.running || self.ambient.fading) return;
+        var roll = Math.random();
+        try {
+          if (roll < 0.42) {
+            // distant musket ripple
+            for (var i = 0; i < 4 + (Math.random() * 5 | 0); i++) {
+              (function (d) { setTimeout(function () { if (self.ambient.running) self.musketCrack(true); }, d); })(i * (50 + Math.random() * 70));
+            }
+          } else if (roll < 0.62) {
+            self.cannonBoom(true);
+          } else if (roll < 0.78) {
+            self.shout();
+          } else if (roll < 0.9) {
+            self.drumPulse();
+            if (Math.random() < 0.5) setTimeout(function () { if (self.ambient.running) self.drumPulse(); }, 180);
+          } else {
+            self.fifeNote();
+          }
+        } catch (e) {}
+        var wait = 900 + Math.random() * 2200;
+        self.ambient.timer = setTimeout(schedule, wait);
+      }
+      // gentle opening ripple
+      setTimeout(function () { if (self.ambient.running) self.musketCrack(true); }, 200);
+      setTimeout(function () { if (self.ambient.running) self.drumPulse(); }, 600);
+      self.ambient.timer = setTimeout(schedule, 1200);
+    },
+    stopMenuAmbient: function (fadeMs) {
+      fadeMs = fadeMs == null ? 900 : fadeMs;
+      var self = this;
+      if (!this.ambient.running && !this.ambient.timer) return;
+      this.ambient.fading = true;
+      this.ambient.running = false;
+      if (this.ambient.timer) { clearTimeout(this.ambient.timer); this.ambient.timer = null; }
+      if (!this.ctx || !this.ambientGain) return;
+      var g = this.ambientGain.gain;
+      var now = this.ctx.currentTime;
+      try {
+        g.cancelScheduledValues(now);
+        g.setValueAtTime(Math.max(0.0001, g.value), now);
+        g.linearRampToValueAtTime(0.0001, now + fadeMs / 1000);
+      } catch (e) {}
+      setTimeout(function () {
+        self.ambient.fading = false;
+        if (self.ambientGain) self.ambientGain.gain.value = 0.0001;
+      }, fadeMs + 50);
     }
   };
 
@@ -2692,6 +2927,338 @@
     _csaRalliedOnce: false
   };
 
+  // =====================================================================
+  // Key bindings + Main Menu / Pause (localStorage)
+  // =====================================================================
+  state.paused = false;
+  state._bindListen = null; // action name while rebinding
+
+  var DEFAULT_KEYBINDS = {
+    moveForward: "KeyW",
+    moveBack: "KeyS",
+    moveLeft: "KeyA",
+    moveRight: "KeyD",
+    sprint: "ShiftLeft",
+    crouch: "KeyC",
+    prone: "KeyZ",
+    jump: "Space",
+    reload: "KeyR",
+    bandage: "KeyB",
+    rejoin: "KeyG",
+    formLine: "KeyF",
+    musicCycle: "KeyM",
+    pause: "KeyP",
+    gunPrev: "KeyQ",
+    gunNext: "KeyE",
+    elevUp: "KeyW",
+    elevDown: "KeyS",
+    order1: "Digit1",
+    order2: "Digit2",
+    order3: "Digit3",
+    order4: "Digit4",
+    order5: "Digit5",
+    order6: "Digit6",
+    order7: "Digit7",
+    order8: "Digit8",
+    order9: "Digit9",
+    scoreboard: "Tab"
+  };
+  var KEYBIND_LABELS = {
+    moveForward: "Move forward",
+    moveBack: "Move back",
+    moveLeft: "Move left",
+    moveRight: "Move right",
+    sprint: "Sprint",
+    crouch: "Crouch",
+    prone: "Prone",
+    jump: "Jump",
+    reload: "Reload",
+    bandage: "Bandage",
+    rejoin: "Rejoin line",
+    formLine: "Formation line (F)",
+    musicCycle: "Cycle battle music",
+    pause: "Pause",
+    gunPrev: "Prev gun (artillery)",
+    gunNext: "Next gun (artillery)",
+    elevUp: "Elevate gun (artillery)",
+    elevDown: "Depress gun (artillery)",
+    order1: "Order: Ready",
+    order2: "Order: Commence fire",
+    order3: "Order: Cease fire",
+    order4: "Order: Load",
+    order5: "Order: Advance / form",
+    order6: "Order: Halt",
+    order7: "Order: Charge",
+    order8: "Order: Fall back",
+    order9: "Order: Skirmish",
+    scoreboard: "Toggle company HUD"
+  };
+
+  function loadKeybinds() {
+    var map = {};
+    Object.keys(DEFAULT_KEYBINDS).forEach(function (k) { map[k] = DEFAULT_KEYBINDS[k]; });
+    try {
+      var raw = localStorage.getItem("wots_keybinds_v1");
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        Object.keys(parsed || {}).forEach(function (k) {
+          if (DEFAULT_KEYBINDS[k] && typeof parsed[k] === "string") map[k] = parsed[k];
+        });
+      }
+    } catch (e) {}
+    state.keybinds = map;
+    return map;
+  }
+  function saveKeybinds() {
+    try { localStorage.setItem("wots_keybinds_v1", JSON.stringify(state.keybinds)); } catch (e) {}
+  }
+  function resetKeybinds() {
+    state.keybinds = {};
+    Object.keys(DEFAULT_KEYBINDS).forEach(function (k) { state.keybinds[k] = DEFAULT_KEYBINDS[k]; });
+    saveKeybinds();
+    renderKeybindLists();
+  }
+  loadKeybinds();
+
+  function bindCode(action) {
+    return (state.keybinds && state.keybinds[action]) || DEFAULT_KEYBINDS[action];
+  }
+  function codeMatches(e, action) {
+    var want = bindCode(action);
+    if (!want) return false;
+    if (e.code === want) return true;
+    // ShiftLeft bind also accepts ShiftRight unless rebound away from Shift*
+    if (want === "ShiftLeft" && e.code === "ShiftRight") return true;
+    if (want === "ShiftRight" && e.code === "ShiftLeft") return true;
+    // DigitN also accept NumpadN for orders/guns
+    if (want.indexOf("Digit") === 0) {
+      var n = want.slice(5);
+      if (e.code === "Numpad" + n) return true;
+    }
+    return false;
+  }
+  function keyHeld(action) {
+    var code = bindCode(action);
+    if (!code) return false;
+    if (state.keys[code]) return true;
+    if (code === "ShiftLeft" && state.keys["ShiftRight"]) return true;
+    if (code.indexOf("Digit") === 0) {
+      var n = code.slice(5);
+      if (state.keys["Numpad" + n]) return true;
+    }
+    return false;
+  }
+  function prettyCode(code) {
+    if (!code) return "—";
+    if (code.indexOf("Key") === 0) return code.slice(3);
+    if (code.indexOf("Digit") === 0) return code.slice(5);
+    if (code === "ShiftLeft" || code === "ShiftRight") return "Shift";
+    if (code === "ControlLeft" || code === "ControlRight") return "Ctrl";
+    if (code === "Space") return "Space";
+    if (code === "Tab") return "Tab";
+    if (code === "Escape") return "Esc";
+    if (code.indexOf("Numpad") === 0) return "Num" + code.slice(6);
+    return code;
+  }
+
+  var DEFAULT_VOLUMES = { master: 1, music: 1, effects: 1, units: 1, gunfire: 1 };
+  function loadVolumes() {
+    var v = {};
+    Object.keys(DEFAULT_VOLUMES).forEach(function (k) { v[k] = DEFAULT_VOLUMES[k]; });
+    try {
+      var raw = localStorage.getItem("wots_volumes_v1");
+      if (raw) {
+        var p = JSON.parse(raw);
+        Object.keys(v).forEach(function (k) {
+          if (typeof p[k] === "number") v[k] = Math.max(0, Math.min(1, p[k]));
+        });
+      }
+    } catch (e) {}
+    audio.setCategoryVolume("master", v.master);
+    audio.setCategoryVolume("music", v.music);
+    audio.setCategoryVolume("effects", v.effects);
+    audio.setCategoryVolume("units", v.units);
+    audio.setCategoryVolume("gunfire", v.gunfire);
+    return v;
+  }
+  function saveVolumes() {
+    try {
+      localStorage.setItem("wots_volumes_v1", JSON.stringify({
+        master: audio.masterVol, music: audio.musicVol, effects: audio.effectsVol,
+        units: audio.unitsVol, gunfire: audio.gunfireVol
+      }));
+    } catch (e) {}
+  }
+  loadVolumes();
+
+  function mountVolumeSliders(host) {
+    if (!host) return;
+    var tmpl = document.getElementById("tmplVolumeSliders");
+    host.innerHTML = "";
+    if (tmpl && tmpl.content) host.appendChild(tmpl.content.cloneNode(true));
+    var map = {
+      master: audio.masterVol, music: audio.musicVol, effects: audio.effectsVol,
+      units: audio.unitsVol, gunfire: audio.gunfireVol
+    };
+    host.querySelectorAll("[data-vol]").forEach(function (input) {
+      var cat = input.getAttribute("data-vol");
+      var val = Math.round((map[cat] != null ? map[cat] : 1) * 100);
+      input.value = String(val);
+      var lab = host.querySelector('[data-vol-label="' + cat + '"]');
+      if (lab) lab.textContent = String(val);
+      input.oninput = function () {
+        var v = parseInt(input.value, 10) / 100;
+        audio.setCategoryVolume(cat, v);
+        if (lab) lab.textContent = String(input.value);
+        saveVolumes();
+      };
+    });
+  }
+
+  function renderKeybindLists() {
+    function fill(host) {
+      if (!host) return;
+      host.innerHTML = "";
+      Object.keys(KEYBIND_LABELS).forEach(function (action) {
+        var row = document.createElement("div");
+        row.className = "bind-row";
+        var lab = document.createElement("span");
+        lab.textContent = KEYBIND_LABELS[action];
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "bind-btn";
+        btn.setAttribute("data-bind-action", action);
+        btn.textContent = prettyCode(bindCode(action));
+        if (state._bindListen === action) {
+          btn.classList.add("listening");
+          btn.textContent = "Press key…";
+        }
+        btn.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          state._bindListen = action;
+          renderKeybindLists();
+        });
+        row.appendChild(lab);
+        row.appendChild(btn);
+        host.appendChild(row);
+      });
+    }
+    fill(document.getElementById("controlsBindMount"));
+    fill(document.getElementById("pauseControlsMount"));
+  }
+
+  function showMenuView(name) {
+    var card = document.getElementById("overlayCard");
+    if (!card) return;
+    card.querySelectorAll(".menu-view").forEach(function (v) {
+      v.classList.toggle("active", v.getAttribute("data-view") === name);
+    });
+    if (name === "options") mountVolumeSliders(document.getElementById("optionsVolumeMount"));
+    if (name === "controls") renderKeybindLists();
+    if (name === "multi") {
+      // keep panels as user left them
+    }
+  }
+
+  function showPauseView(name) {
+    var card = document.getElementById("pauseCard");
+    if (!card) return;
+    card.querySelectorAll(".menu-view").forEach(function (v) {
+      v.classList.toggle("active", v.getAttribute("data-pause-view") === name);
+    });
+    if (name === "options") mountVolumeSliders(document.getElementById("pauseOptionsMount"));
+    if (name === "controls") renderKeybindLists();
+  }
+
+  function openMainMenu() {
+    state.paused = false;
+    state.running = false;
+    var po = document.getElementById("pauseOverlay");
+    if (po) { po.classList.remove("show"); po.setAttribute("aria-hidden", "true"); }
+    overlay.classList.remove("hidden");
+    hud.classList.add("hidden");
+    crosshair.classList.add("hidden");
+    if (companyHud) companyHud.style.display = "none";
+    showMenuView("main");
+    try { document.exitPointerLock(); } catch (e) {}
+    audio.resume();
+    audio.startMenuAmbient();
+  }
+
+  function pauseGame() {
+    if (!state.running || state.paused) return;
+    state.paused = true;
+    try { document.exitPointerLock(); } catch (e) {}
+    var po = document.getElementById("pauseOverlay");
+    if (po) { po.classList.add("show"); po.setAttribute("aria-hidden", "false"); }
+    showPauseView("root");
+  }
+  function resumeGame() {
+    if (!state.paused) return;
+    state.paused = false;
+    state._bindListen = null;
+    var po = document.getElementById("pauseOverlay");
+    if (po) { po.classList.remove("show"); po.setAttribute("aria-hidden", "true"); }
+    if (renderer.domElement && renderer.domElement.requestPointerLock) {
+      try { renderer.domElement.requestPointerLock(); } catch (e) {}
+    }
+  }
+  function quitToMainMenu() {
+    state.paused = false;
+    state.running = false;
+    state.netMode = false;
+    state.netHost = false;
+    try { hideGbHud(); hideGbPoint(); closeGbCourier(); } catch (e) {}
+    var po = document.getElementById("pauseOverlay");
+    if (po) { po.classList.remove("show"); po.setAttribute("aria-hidden", "true"); }
+    deathScreen.classList.remove("show");
+    openMainMenu();
+  }
+
+  // Wire main menu navigation (delegated)
+  (function wireMenus() {
+    var sp = document.getElementById("menuSinglePlayer");
+    var mp = document.getElementById("menuMultiplayer");
+    var op = document.getElementById("menuOptions");
+    var ct = document.getElementById("menuControls");
+    if (sp) sp.addEventListener("click", function () { showMenuView("single"); audio.resume(); audio.startMenuAmbient(); });
+    if (mp) mp.addEventListener("click", function () { showMenuView("multi"); audio.resume(); audio.startMenuAmbient(); });
+    if (op) op.addEventListener("click", function () { showMenuView("options"); });
+    if (ct) ct.addEventListener("click", function () { showMenuView("controls"); });
+    document.querySelectorAll(".menu-back[data-back]").forEach(function (btn) {
+      btn.addEventListener("click", function () { showMenuView(btn.getAttribute("data-back") || "main"); });
+    });
+    var cr = document.getElementById("controlsReset");
+    if (cr) cr.addEventListener("click", resetKeybinds);
+    var pr = document.getElementById("pauseResume");
+    if (pr) pr.addEventListener("click", resumeGame);
+    var po = document.getElementById("pauseOptions");
+    if (po) po.addEventListener("click", function () { showPauseView("options"); });
+    var pc = document.getElementById("pauseControls");
+    if (pc) pc.addEventListener("click", function () { showPauseView("controls"); });
+    var pq = document.getElementById("pauseQuit");
+    if (pq) pq.addEventListener("click", quitToMainMenu);
+    var pob = document.getElementById("pauseOptionsBack");
+    if (pob) pob.addEventListener("click", function () { showPauseView("root"); });
+    var pcb = document.getElementById("pauseControlsBack");
+    if (pcb) pcb.addEventListener("click", function () { showPauseView("root"); });
+    var pcr = document.getElementById("pauseControlsReset");
+    if (pcr) pcr.addEventListener("click", resetKeybinds);
+    // First gesture: unlock audio + menu ambient (autoplay policy)
+    var armed = false;
+    function armAmbient() {
+      if (armed) return;
+      armed = true;
+      try {
+        audio.resume();
+        if (!state.running) audio.startMenuAmbient();
+      } catch (e) {}
+    }
+    window.addEventListener("pointerdown", armAmbient, { passive: true });
+    window.addEventListener("keydown", armAmbient, { passive: true });
+  })();
+
+
   function Soldier(x, z, side, isPlayer, roleOpts) {
     roleOpts = roleOpts || {};
     this.side = side;
@@ -3825,6 +4392,7 @@
 
   function startGettysburgDayOne() {
     audio.resume();
+    try { audio.stopMenuAmbient(800); } catch (e) {}
     state.scenario = "gettysburg";
     state.gbBranch = null;
     state.gbPoint = 0;
@@ -4111,59 +4679,95 @@
 
   // ---- Input ----
   window.addEventListener("keydown", function (e) {
+    // Rebinding capture (Options/Controls screens)
+    if (state._bindListen) {
+      e.preventDefault();
+      if (e.code !== "Escape") {
+        state.keybinds[state._bindListen] = e.code;
+        saveKeybinds();
+      }
+      state._bindListen = null;
+      renderKeybindLists();
+      return;
+    }
     state.keys[e.code] = true;
-    if (e.code === "KeyR" && state.running && state.role === "private") beginReload();
-    if (e.code === "KeyB" && state.running) beginBandage();
-    if (e.code === "KeyG" && state.running) rejoinLine();
-    if (e.code === "KeyZ" && state.running) {
+
+    // Esc: release pointer lock; if in battle open pause (so Esc always reaches us)
+    if (e.code === "Escape") {
+      if (state.pointerLocked) {
+        try { document.exitPointerLock(); } catch (err) {}
+        // After unlock, a following Esc / or immediate pause if already unlocked next time
+      }
+      if (state.running) {
+        if (state.paused) resumeGame();
+        else pauseGame();
+      }
+      return;
+    }
+    if (codeMatches(e, "pause") && state.running) {
+      e.preventDefault();
+      if (state.paused) resumeGame();
+      else pauseGame();
+      return;
+    }
+    if (state.paused) return; // ignore gameplay keys while paused
+
+    if (codeMatches(e, "reload") && state.running && (state.role === "private" || state.role === "spectator")) beginReload();
+    if (codeMatches(e, "bandage") && state.running) beginBandage();
+    if (codeMatches(e, "rejoin") && state.running) rejoinLine();
+    if (codeMatches(e, "prone") && state.running) {
       state.prone = !state.prone;
       if (state.prone) { state.crouching = false; state._crouchSticky = false; }
     }
-    if (e.code === "KeyC" && state.running) {
+    if (codeMatches(e, "crouch") && state.running) {
       if (!state.prone) {
         state._crouchSticky = !state._crouchSticky;
         state.crouching = state._crouchSticky;
       }
     }
-    if (e.code === "Escape") document.exitPointerLock();
+    if (codeMatches(e, "scoreboard") && state.running) {
+      e.preventDefault();
+      if (companyHud) {
+        companyHud.style.display = (companyHud.style.display === "none" ? "block" : "none");
+      }
+    }
     // M cycles battle music on any device / even at the menu
-    if (e.code === "KeyM") {
+    if (codeMatches(e, "musicCycle")) {
       var r = audio.cycleBattleMusic();
-      state.orderText = r.label + " (M)";
+      state.orderText = r.label + " (music)";
       audio.syncMusicPanel();
     }
     // Artillery Officer gun selection / fire / elevation nudges
     if (state.running && state.role === "artilleryOfficer") {
-      if (e.code === "KeyQ") selectGun((state.battery ? state.battery.selected : 0) - 1);
-      if (e.code === "KeyE") selectGun((state.battery ? state.battery.selected : 0) + 1);
-      if (e.code === "Digit1" || e.code === "Numpad1") selectGun(0);
-      if (e.code === "Digit2" || e.code === "Numpad2") selectGun(1);
-      if (e.code === "Digit3" || e.code === "Numpad3") selectGun(2);
-      if (e.code === "Digit4" || e.code === "Numpad4") selectGun(3);
-      if (e.code === "Digit5" || e.code === "Numpad5") selectGun(4);
-      if (e.code === "Digit6" || e.code === "Numpad6") selectGun(5);
-      if (e.code === "KeyW") state.artyElev = Math.min(0.35, (state.artyElev || 0) + 0.02);
-      if (e.code === "KeyS") state.artyElev = Math.max(-0.05, (state.artyElev || 0) - 0.02);
+      if (codeMatches(e, "gunPrev")) selectGun((state.battery ? state.battery.selected : 0) - 1);
+      if (codeMatches(e, "gunNext")) selectGun((state.battery ? state.battery.selected : 0) + 1);
+      if (codeMatches(e, "order1")) selectGun(0);
+      if (codeMatches(e, "order2")) selectGun(1);
+      if (codeMatches(e, "order3")) selectGun(2);
+      if (codeMatches(e, "order4")) selectGun(3);
+      if (codeMatches(e, "order5")) selectGun(4);
+      if (codeMatches(e, "order6")) selectGun(5);
+      if (codeMatches(e, "elevUp")) state.artyElev = Math.min(0.35, (state.artyElev || 0) + 0.02);
+      if (codeMatches(e, "elevDown")) state.artyElev = Math.max(-0.05, (state.artyElev || 0) - 0.02);
       return; // infantry company orders are AI in this role
     }
     if (!state.running || state.role !== "officer") return;
-    if (e.code === "Digit1" || e.code === "Numpad1") issueCompanyOrder("ready");
-    if (e.code === "Digit2" || e.code === "Numpad2") issueCompanyOrder("commenceFire");
-    if (e.code === "Digit3" || e.code === "Numpad3") issueCompanyOrder("ceaseFire");
-    if (e.code === "Digit4" || e.code === "Numpad4") issueCompanyOrder("load");
-    if (e.code === "Digit5" || e.code === "Numpad5") issueCompanyOrder("advanceToggle");
-    if (e.code === "Digit6" || e.code === "Numpad6") issueCompanyOrder("halt");
-    if (e.code === "Digit7" || e.code === "Numpad7") issueCompanyOrder("charge");
-    if (e.code === "Digit8" || e.code === "Numpad8") issueCompanyOrder("fallback");
-    if (e.code === "Digit9" || e.code === "Numpad9") issueCompanyOrder("skirmish");
-    if (e.code === "KeyF") {
+    if (codeMatches(e, "order1")) issueCompanyOrder("ready");
+    if (codeMatches(e, "order2")) issueCompanyOrder("commenceFire");
+    if (codeMatches(e, "order3")) issueCompanyOrder("ceaseFire");
+    if (codeMatches(e, "order4")) issueCompanyOrder("load");
+    if (codeMatches(e, "order5")) issueCompanyOrder("advanceToggle");
+    if (codeMatches(e, "order6")) issueCompanyOrder("halt");
+    if (codeMatches(e, "order7")) issueCompanyOrder("charge");
+    if (codeMatches(e, "order8")) issueCompanyOrder("fallback");
+    if (codeMatches(e, "order9")) issueCompanyOrder("skirmish");
+    if (codeMatches(e, "formLine")) {
       var now = performance.now();
       if (state._lastF && now - state._lastF < 350) {
         flipFormFacing();
         state._lastF = 0;
       } else {
         state._lastF = now;
-        // hold-to-draw starts on mousedown equivalent — also allow key hold
         if (!state.drawingLine) {
           beginDrawLine(window.innerWidth * 0.5, window.innerHeight * 0.55);
         }
@@ -4172,14 +4776,20 @@
   });
   window.addEventListener("keyup", function (e) {
     state.keys[e.code] = false;
-    if (e.code === "KeyF" && state.drawingLine) endDrawLine();
+    if (codeMatches(e, "formLine") && state.drawingLine) endDrawLine();
+  });
+  // When pointer lock drops via Esc, open pause if still running
+  document.addEventListener("pointerlockchange", function () {
+    var locked = document.pointerLockElement === renderer.domElement;
+    state.pointerLocked = locked;
+    if (!locked && state.running && !state.paused && !state.gbCourierOpen) {
+      // Soft pause affordance: do not auto-pause on every unlock (click UI), only when Esc requested
+      // Handled in keydown Escape path.
+    }
   });
 
   renderer.domElement.addEventListener("click", function () {
     if (state.running) renderer.domElement.requestPointerLock();
-  });
-  document.addEventListener("pointerlockchange", function () {
-    state.pointerLocked = document.pointerLockElement === renderer.domElement;
   });
   document.addEventListener("mousemove", function (e) {
     if (!state.pointerLocked || !state.running) return;
@@ -4212,6 +4822,8 @@
 
   function beginGame(role) {
     audio.resume();
+    try { audio.stopMenuAmbient(800); } catch (e) {}
+    state.paused = false;
     state.role = role;
     spawnBattle();
     state.running = true;
@@ -4238,6 +4850,16 @@
         camera.position.set(state.player.x, state.player.y + 1.65, state.player.z);
       }
       selectGun(0);
+    } else if (role === "spectator") {
+      companyHud.style.display = "none";
+      document.getElementById("hint").textContent =
+        "Spectator · WASD fly · mouse look · Esc/P pause · no combat";
+      state.weaponsFree = false;
+      // Lift camera for overview
+      if (state.player) {
+        state.player.y = sampleHeight(state.player.x, state.player.z) + 12;
+        camera.position.set(state.player.x, state.player.y, state.player.z);
+      }
     } else {
       companyHud.style.display = "none";
       document.getElementById("hint").textContent =
@@ -4256,6 +4878,12 @@
     state.scenario = null; state.gbBranch = null; state.gbPoint = 0;
     hideGbHud(); hideGbPoint(); closeGbCourier(); clearGbProps(); clearBattery();
     state.netMode = false; state.netHost = false; beginGame("artilleryOfficer");
+  });
+  var startSpectatorBtn = document.getElementById("startSpectator");
+  if (startSpectatorBtn) startSpectatorBtn.addEventListener("click", function () {
+    state.scenario = null; state.gbBranch = null; state.gbPoint = 0;
+    hideGbHud(); hideGbPoint(); closeGbCourier(); clearGbProps(); clearBattery();
+    state.netMode = false; state.netHost = false; beginGame("spectator");
   });
   var hostOfficerBtn = document.getElementById("hostOfficer");
   var joinShowBtn = document.getElementById("joinShow");
@@ -4431,9 +5059,10 @@
   }
 
   function tryFire() {
-    if (!state.running || state.won !== null) return;
+    if (!state.running || state.won !== null || state.paused) return;
     var p = state.player;
     if (!p || !p.alive) return;
+    if (state.role === "spectator") return;
 
     if (state.role === "artilleryOfficer") {
       fireSelectedGun();
@@ -4935,10 +5564,10 @@
       else if (state.crouching) mul *= 0.58;
       if (state.aiming) mul *= Math.max(0.35, 1 - state.settle * 0.65);
       // still: no WASD / no touch move
-      var moving = !!(state.keys["KeyW"] || state.keys["KeyA"] || state.keys["KeyS"] || state.keys["KeyD"] ||
+      var moving = !!(keyHeld("moveForward") || keyHeld("moveLeft") || keyHeld("moveBack") || keyHeld("moveRight") ||
         (state.touchMove && (Math.abs(state.touchMove.x) + Math.abs(state.touchMove.y) > 0.08)));
       if (!moving) mul *= 0.72;
-      if (state.keys["ShiftLeft"] || state.keys["ShiftRight"] || state.touchSprint) s._postSprint = 1.8;
+      if (keyHeld("sprint") || state.touchSprint) s._postSprint = 1.8;
     } else {
       // AI stance proxies: crawling / wounded shrink or grow
       if (s.crawl || s.prone) mul *= 0.4;
@@ -7200,6 +7829,7 @@
 
   function updatePlayer(dt) {
     if (state.photoMode) return;
+    if (state.paused) return;
     var p = state.player;
     if (!p) return;
     if (!p.alive) {
@@ -7209,7 +7839,7 @@
     updateBleeding(p, dt);
     if (!p.alive) return;
 
-    if (state.role === "officer" && state.keys["KeyF"] && state.drawingLine) {
+    if (state.role === "officer" && keyHeld("formLine") && state.drawingLine) {
       updateDrawLine(window.innerWidth * 0.5, window.innerHeight * 0.52);
     }
 
@@ -7221,7 +7851,7 @@
       state.crouching = wantCrouch;
     }
 
-    var sprinting = !!(state.keys["ShiftLeft"] || state.keys["ShiftRight"] || state.touchSprint);
+    var sprinting = !!(keyHeld("sprint") || state.touchSprint);
     if (state.prone || state.crouching || state.aiming || state.bandaging) sprinting = false;
     if (state.stamina <= 1) sprinting = false;
 
@@ -7248,10 +7878,10 @@
     if (p.crawl && !state.prone) spd *= 0.4;
 
     var f = 0, r = 0;
-    if (state.keys["KeyW"]) f += 1;
-    if (state.keys["KeyS"]) f -= 1;
-    if (state.keys["KeyA"]) r -= 1;
-    if (state.keys["KeyD"]) r += 1;
+    if (keyHeld("moveForward")) f += 1;
+    if (keyHeld("moveBack")) f -= 1;
+    if (keyHeld("moveLeft")) r -= 1;
+    if (keyHeld("moveRight")) r += 1;
     if (state.touchMove) {
       f += state.touchMove.y || 0;
       r += state.touchMove.x || 0;
@@ -7271,7 +7901,20 @@
     }
 
     // Jump / vault
-    if (state.onGround && state.keys["Space"] && !state.prone && !state.bandaging) {
+    if (state.role === "spectator") {
+      // Free-fly: jump up, crouch down — skip gravity/ground snap
+      if (keyHeld("jump")) p.y += 14 * dt;
+      if (keyHeld("crouch") || state._crouchSticky) p.y -= 14 * dt;
+      p.y = Math.max(sampleHeight(nx, nz) + 1.5, p.y);
+      state.onGround = true;
+      state.vy = 0;
+      p.x = nx; p.z = nz;
+      camera.position.set(p.x, p.y, p.z);
+      camera.rotation.order = "YXZ";
+      camera.rotation.y = state.yaw;
+      camera.rotation.x = state.pitch;
+      return;
+    } else if (state.onGround && keyHeld("jump") && !state.prone && !state.bandaging) {
       // Near vaultable fence?
       var nearFence = false;
       for (var fi = 0; fi < colliders.length; fi++) {
@@ -7283,7 +7926,7 @@
       state.onGround = false;
       state.vaulting = nearFence;
       state.crouching = false;
-      state.keys["Space"] = false; // consume
+      state.keys[bindCode("jump")] = false; // consume
       state.stamina = Math.max(0, state.stamina - (nearFence ? 12 : 8));
     }
 
@@ -7442,21 +8085,30 @@
     state.running = false;
     document.exitPointerLock();
     crosshair.classList.add("hidden");
-    overlay.classList.remove("hidden");
-    overlayCard.innerHTML =
-      "<h1>" + (win ? "Victory" : "Defeat") + "</h1>" +
-      "<p class=\"sub\">Engagement complete</p>" +
-      "<p>" + msg + "</p>" +
+    var end = document.getElementById("endBattleCard");
+    if (!end) {
+      end = document.createElement("div");
+      end.id = "endBattleCard";
+      end.style.cssText = "position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(6,8,5,.82)";
+      document.body.appendChild(end);
+    }
+    end.style.display = "flex";
+    end.innerHTML = "<div class=\"card\" style=\"width:min(520px,92vw)\"><h1>" + (win ? "Victory" : "Defeat") + "</h1>" +
+      "<p class=\"sub\">Engagement complete</p><p>" + msg + "</p>" +
       "<p>Your musket accounted for <strong>" + (state.player ? state.player.kills : 0) +
       "</strong> of the enemy. Cartridges left: " + state.ammo + ".</p>" +
-      "<button type=\"button\" id=\"againBtn\">Fight Again</button>";
+      "<div class=\"menu-stack\"><button type=\"button\" id=\"againBtn\">Fight Again</button>" +
+      "<button type=\"button\" id=\"endToMenuBtn\" class=\"menu-back\">Main Menu</button></div></div>";
     document.getElementById("againBtn").addEventListener("click", function () {
-      if (state.scenario === "gettysburg") {
-        startGettysburgDayOne();
-      } else {
-        beginGame(state.role || "private");
-      }
+      end.style.display = "none";
+      if (state.scenario === "gettysburg") startGettysburgDayOne();
+      else beginGame(state.role || "private");
     });
+    document.getElementById("endToMenuBtn").addEventListener("click", function () {
+      end.style.display = "none";
+      openMainMenu();
+    });
+    try { audio.startMenuAmbient(); } catch (e) {}
   }
 
   function updateHUD() {
@@ -7614,6 +8266,7 @@
   // CSA occasional massed volley
   function tick(dt) {
     if (!state.running || state.won !== null) return;
+    if (state.paused) { updateHUD(); return; } // freeze sim; keep rendering via frame()
     state.clock += dt;
     updatePowder(dt);
     // Gentle wind variation
@@ -8261,9 +8914,12 @@
         notice.classList.add("show");
         return false;
       };
-      ["startOfficer", "startGettysburg", "hostOfficer", "joinShow", "joinGo", "hostEnterField"].forEach(function (id) {
+      ["startOfficer", "startArtillery", "startGettysburg", "startSpectator", "hostOfficer", "joinShow", "joinGo", "hostEnterField", "menuSinglePlayer"].forEach(function (id) {
         var el = document.getElementById(id);
         if (!el) return;
+        el.addEventListener("click", block, true);
+      });
+      document.querySelectorAll(".menuStartBtn").forEach(function (el) {
         el.addEventListener("click", block, true);
       });
       // Long-press (~2s) on the title reveals the hidden music player
@@ -8362,6 +9018,12 @@
       return true;
     },
     startGettysburg: startGettysburgDayOne,
+    openMainMenu: openMainMenu,
+    pauseGame: pauseGame,
+    resumeGame: resumeGame,
+    showMenuView: showMenuView,
+    bindCode: bindCode,
+    keyHeld: keyHeld,
     applyGbBranch: applyGbBranch,
     beginGbPoint1: beginGbPoint1,
     beginGbPoint2: beginGbPoint2,
