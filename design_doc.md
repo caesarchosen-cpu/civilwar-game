@@ -368,3 +368,73 @@ A brief **+X% morale** flash appears on the bar / HUD. **No soldiers return** �
 ---
 
 *Document version 0.6 — historical OOB table; independent fire; field music/colors; break/rally morale.*
+
+---
+
+## Historical placements — Gettysburg Day 1 (game coordinates)
+
+**Coordinate convention (continuous Day One field):** −X = west (Cashtown / Herr Ridge), +X = east (toward Cemetery / Culp); +Z = north; −Z = south (Cemetery Hill). Chambersburg Pike ≈ `z = GB.pikeZ` (8). McPherson crest ≈ (`GB.ridgeX`, `GB.ridgeZ`) = (−42, 18).
+
+**Force scale:** `1 infantry/cavalry figure ≈ 20 men` (`FORCE_SCALE.menPerFigure`). Artillery pieces are **1:1** (real gun counts). Player infantry company kept at company detail (~24 figures) as a **24th Michigan detachment**, not the full regiment. Target on-field budget ≈ **300–500** figures. **Scale:** `1 figure ≈ 20 men`; guns **1:1**. **LOD:** player company + Calef crew keep full articulated meshes; theater infantry/cavalry/AI crews spawn **cheap-first** (shared Lambert box proxies, instanced-style shared geometries). Distance bands on the compressed Day-1 map: near ≤~22, mid ~22–40, far ≥~40 — far units get subsampled targeting and half/third-rate AI. Renderer: BasicShadowMap, 1024 shadow map, pixel ratio capped at 1.25.
+
+### Landmark → game map
+
+| Landmark | Game coords | Notes / sources |
+|----------|-------------|-----------------|
+| Chambersburg (Cashtown) Pike | `z ≈ 8` (`GB.pikeZ`), road mesh along X | Existing pike; Calef/Hall monuments at pike & Stone Ave ([Stone Sentinels Calef](https://gettysburg.stonesentinels.com/us-regulars/us-artillery/2nd-us-artillery-battery-a/); [Hall](https://gettysburg.stonesentinels.com/union-monuments/maine/2nd-maine-battery/)) |
+| McPherson Ridge crest | `(-42, 18)` | Existing `GB.ridgeX/Z`; Buford principal stand ([NPS seminar first day](https://npshistory.com/series/symposia/gettysburg_seminars/10/first_day.htm)) |
+| Herr Ridge | `GB.herrX/Z = (-68, 14)` | West of Willoughby Run; Heth/Pegram high ground ([NPS first day](https://npshistory.com/series/symposia/gettysburg_seminars/10/first_day.htm); artillery essay) |
+| Willoughby Run | `GB.willoughbyX/Z = (-55, 12)` | Between Herr & McPherson |
+| Herbst Woods (Iron Brigade) | `GB.herbstX/Z = (-44, 2)` | **South of pike**; 24th Michigan / Meredith ([NPS Civil War series §3](https://www.npshistory.com/publications/civil_war_series/16/sec3.htm); [NPS AOP OOB](https://www.nps.gov/gett/learn/historyculture/aop-orderofbattle.htm)) |
+| Unfinished railroad cut | `z ≈ GB.rrCutZ` (2), near ridge | North of pike; Davis / Cutler / Hall right ([Stone Sentinels Jul 1 timeline](https://gettysburg.stonesentinels.com/timeline-battle-july-1/); [OR Hall](https://www.nps.gov/gett/learn/historyculture/official-report-of-captain-james-a-hall.htm)) |
+| Seminary Ridge | `(-18, 6)` | Point 2 breastworks |
+| Kuhn's brickyard | `(-6, -14)` | Point 3 rear-guard (Coster / 154th NY) |
+| Cemetery Hill | `(12, -95)` | Point 3 objective |
+| Devin northern screen | `GB.devinX/Z = (-10, 42)` | Carlisle / northern approaches ([Epperson Jul 1 timeline](https://jfepperson.org/gettys1.htm); Buford OR via Iron Brigader) |
+
+### Unit placement table (by point)
+
+| Point | Unit | Side | Historical role | Game placement | Guns / figures (scaled) | Sources |
+|-------|------|------|-----------------|----------------|-------------------------|---------|
+| 1 | **Calef's Battery A, 2nd U.S. Artillery** (player Artillery Officer) | Union | Horse artillery with Buford; **six 3-inch Ordnance Rifles**; first Union gun | Right section **north** of pike, left **south** of pike at McPherson (`ridgeX+`, `pikeZ±4`) | **6 guns** 1:1 | [Stone Sentinels Battery A](https://gettysburg.stonesentinels.com/us-regulars/us-artillery/2nd-us-artillery-battery-a/); [HMDB](https://www.hmdb.org/m.asp?m=12663); Calef OR narrative |
+| 1 | **Hall's Battery B, 2nd Maine** (AI) | Union | Relieves Calef ~10 a.m.; right of Cashtown road | North of pike near cut (`ridgeX+6`, `pikeZ+5`) | **6 guns** | [OR Hall (NPS)](https://www.nps.gov/gett/learn/historyculture/official-report-of-captain-james-a-hall.htm); [Stone Sentinels 2nd Maine Battery](https://gettysburg.stonesentinels.com/union-monuments/maine/2nd-maine-battery/) |
+| 1 | **Pegram's Battalion (section)** (AI) | CSA | Supported Heth from Herr Ridge | `(-68, 14)` facing east | **4 guns** (section stand-in) | [NPS Gettysburg seminar artillery essay](https://www.npshistory.com/series/symposia/gettysburg_seminars/10/essay6.pdf); NPS first-day |
+| 1 | **Gamble's Brigade** (Buford 1st Div.) | Union cavalry | McPherson / pike / Fairfield approaches; delayed Heth | Along McPherson & pike (`ridgeX+2`, `pikeZ-2`) | **70** figures (~1,400 men @ 1:20) | Buford OR ([Iron Brigader](https://ironbrigader.com/2015/06/22/general-john-bufords-report-cavalrys-action-gettysburg/2/)); [NPS first day](https://npshistory.com/series/symposia/gettysburg_seminars/10/first_day.htm) |
+| 1 | **Devin's Brigade** | Union cavalry | Northern roads / Carlisle approaches | `(-10, 42)` | **55** figures | Epperson timeline; Buford OR |
+| 1 | **24th Michigan** (player infantry) | Union | Iron Brigade, Herbst Woods **south of pike** | `herbst (-44, 2)` facing west | **~24** company detail (detachment of ~496 engaged) | [NPS AOP OOB](https://www.nps.gov/gett/learn/historyculture/aop-orderofbattle.htm); NPS series §3 |
+| 1 | **Archer's Brigade** | CSA | South of pike across Willoughby Run into Herbst | West of Willoughby (`~-55…-65`, `herbstZ`) | **~60** @ 1:20 of ~1,200 | Addressing Gettysburg CSA OOB; NPS series §3 |
+| 1 | **Davis's Brigade** | CSA | North of pike / railroad cut | Near `rrCutZ`, north of pike | **50** (screen portion of ~2,300) | Same |
+| 1 | CSA mounted pickets | CSA cavalry | Little CSA cavalry morning Jul 1 — thin gameplay screen | Herr Ridge north | **18** | Documented scarcity: NPS/ABT first-day accounts |
+| 2 | I Corps artillery (AI) | Union | Wainwright mass near Seminary | Seminary crest | 4 guns | [OR Wainwright (NPS)](https://www.nps.gov/gett/learn/historyculture/official-report-of-colonel-charles-s-wainwright.htm) |
+| 2 | Pegram/McIntosh (AI) | CSA | Pursuit from McPherson toward Seminary | McPherson west | 4 guns | NPS artillery seminar |
+| 2 | Gamble remnant | Union cavalry | Left/Seminary support after infantry arrived | SW of Seminary | ~38 | Buford OR |
+| 3 | Cemetery Hill guns (AI) | Union | Cover retreat / heights | Cemetery Hill | 4 guns | OR Hall (ordered to heights); NPS |
+| 3 | Early pursuit guns (AI) | CSA | Into town | North of town grid | 3 guns | NPS first-day town fight |
+| 3 | Buford screen | Union cavalry | Extreme left / south of town approaches | Near Cemetery | 24 | Buford OR evening dispositions |
+
+### Artillery Officer battery identity
+
+The selectable **Artillery Officer** role commands **Battery A, 2nd U.S. Artillery (Calef's)** — historically present with Buford on July 1 with **six 3-inch Ordnance Rifles** (not 12-pounder Napoleons). Gun models use dark iron tubes. Sections straddle the Chambersburg Pike per the battery tablet.
+
+### Counts (expected at Point 1 open, approximate)
+
+| Type | Union | CSA |
+|------|------:|----:|
+| Infantry figures | ~24 player co. | ~60 Archer + ~50 Davis |
+| Cavalry figures | ~70 Gamble + ~55 Devin | ~18 pickets |
+| Gunners (crews) | Calef 6×4 + Hall 6×4 | Pegram 4×4 |
+| Guns | 6 + 6 | 4 |
+| **Total figures (order)** | **~300–450** depending on specialty/alive | |
+
+Exact live counts: `window.__WOTS__.countForces()` after Point 1.
+
+### Headless FPS (Chrome `--headless=new --disable-gpu`, local prototype server)
+
+| Phase | Alive figures | FPS (approx) |
+|-------|--------------:|-------------:|
+| Before historical OOB (company vs company) | ~46 | **7** |
+| After scale + full meshes (no cheap LOD) | ~319 | **2** |
+| After cheap-first LOD / lighter shadows | ~319 | **5–6** |
+
+Headless software GL understates real GPU FPS; relative before/after is the playability check. Live verify: GitHub Pages `gh-pages` / `prototype/index.html`.
+
