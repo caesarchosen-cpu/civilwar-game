@@ -1,0 +1,29 @@
+{
+  "room": "597XA",
+  "see": [
+    1,
+    [
+      {
+        "id": "p3",
+        "role": "officer"
+      }
+    ]
+  ],
+  "cmd": "FIRE!",
+  "hit": {
+    "id": "p4",
+    "b": 100,
+    "a": 65
+  },
+  "jhp": {
+    "hp": 65,
+    "bleed": 2.9880000000000004,
+    "loc": "torso"
+  },
+  "rel": {
+    "reloading": true,
+    "step": 0,
+    "pose": "load",
+    "hp": 65
+  }
+}
