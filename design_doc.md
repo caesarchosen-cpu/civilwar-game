@@ -438,3 +438,18 @@ Exact live counts: `window.__WOTS__.countForces()` after Point 1.
 
 Headless software GL understates real GPU FPS; relative before/after is the playability check. Live verify: GitHub Pages `gh-pages` / `prototype/index.html`.
 
+
+
+---
+
+## Main Menu, pause, audio buses & controls
+
+**Main menu** (`#overlay` views in `prototype/index.html`): Single Player → role select (Infantry Officer / Artillery Officer / Gettysburg Day One / Spectator); Multiplayer → existing host/join panels with a **“Multiplayer server not hosted yet”** note for GitHub Pages; Options; Controls.
+
+**Pause** (`#pauseOverlay`): Esc (releases pointer lock) or rebindable **P** freezes `tick()` via `state.paused`. Resume / Options / Controls / Quit to Main Menu. Options & Controls reuse the same volume slider template (`#tmplVolumeSliders`) and keybind list renderer.
+
+**Volume** (localStorage `wots_volumes_v1`): Master, Music, Effects, Unit sounds, Gunfire — each a WebAudio gain (`master`, `musicGain`, `effects`, `units`, `gunfire`). SFX route through `audio.bus(category)`.
+
+**Menu ambient**: `audio.startMenuAmbient()` / `stopMenuAmbient(fadeMs)` — distant musket ripples, cannon, shouts, drums/fife on `ambientGain`, started on first click/key; fades when a battle begins. Battle music can play over it.
+
+**Keybinds** (localStorage `wots_keybinds_v1`): all gameplay keys read via `bindCode` / `codeMatches` / `keyHeld`; click-to-rebind + Reset to defaults.
