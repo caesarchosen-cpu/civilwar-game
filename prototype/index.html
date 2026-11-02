@@ -231,6 +231,7 @@
   #tbSprint { left: max(150px, calc(env(safe-area-inset-left) + 140px)); bottom: max(28px, env(safe-area-inset-bottom)); }
   #tbCrouch { left: max(150px, calc(env(safe-area-inset-left) + 140px)); bottom: max(96px, calc(env(safe-area-inset-bottom) + 70px)); }
   #tbBandage { left: max(214px, calc(env(safe-area-inset-left) + 204px)); bottom: max(28px, env(safe-area-inset-bottom)); }
+  #tbMusic { left: max(214px, calc(env(safe-area-inset-left) + 204px)); bottom: max(96px, calc(env(safe-area-inset-bottom) + 70px)); }
   #touchOrders {
     pointer-events: none; position: absolute; left: 50%; transform: translateX(-50%);
     bottom: max(8px, env(safe-area-inset-bottom)); display: none; gap: 4px; flex-wrap: wrap;
@@ -345,6 +346,7 @@
   <button type="button" class="touchBtn" id="tbSprint">SPRINT</button>
   <button type="button" class="touchBtn" id="tbCrouch">CROUCH</button>
   <button type="button" class="touchBtn" id="tbBandage">BANDAGE</button>
+  <button type="button" class="touchBtn" id="tbMusic">MUSIC</button>
   <button type="button" class="touchBtn wide" id="tbDraw" style="display:none">DRAW LINE</button>
   <button type="button" class="touchBtn wide" id="tbFlip" style="display:none">FLIP FACE</button>
   <div id="touchOrders">
@@ -486,6 +488,7 @@
       og.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
       osc.connect(og); og.connect(this.master);
       osc.start(t); osc.stop(t + 0.16);
+      this.duckBattle(0.55);
     },
     volley: function () {
       var self = this;
@@ -537,6 +540,74 @@
       osc.connect(bp); bp.connect(g); g.connect(this.master);
       osc.start(t); osc.stop(t + 0.3);
     },
+
+    // 1914 Victor "Battle Cry of Freedom" — HTMLAudio loop, ducked under gunfire
+    battle: null,
+    battleEnabled: true,
+    battleWanted: false, // true once a Point has begun (after unlock)
+    battleUnlocked: false,
+    battleBaseVol: 0.28,
+    battleDuckUntil: 0,
+    ensureBattle: function () {
+      if (this.battle) return this.battle;
+      var a = new Audio("audio/battle_cry_of_freedom_1914.mp3");
+      a.loop = true;
+      a.preload = "auto";
+      a.volume = this.battleBaseVol;
+      this.battle = a;
+      return a;
+    },
+    unlockBattle: function () {
+      this.battleUnlocked = true;
+      this.ensureBattle();
+      // Silent unlock attempt (autoplay policy); real play when a point begins
+      var a = this.battle;
+      try {
+        var p = a.play();
+        if (p && p.then) p.then(function () { a.pause(); a.currentTime = 0; }).catch(function () {});
+      } catch (e) {}
+    },
+    startBattleMusic: function () {
+      this.battleWanted = true;
+      if (!this.battleEnabled || !this.battleUnlocked) return;
+      this.ensure();
+      var a = this.ensureBattle();
+      a.volume = this.battleBaseVol;
+      var p = a.play();
+      if (p && p.catch) p.catch(function () {});
+    },
+    stopBattleMusic: function () {
+      this.battleWanted = false;
+      if (this.battle) { try { this.battle.pause(); } catch (e) {} }
+    },
+    toggleBattleMusic: function () {
+      this.battleEnabled = !this.battleEnabled;
+      if (!this.battleEnabled) {
+        if (this.battle) try { this.battle.pause(); } catch (e) {}
+      } else if (this.battleWanted && this.battleUnlocked) {
+        this.startBattleMusic();
+      }
+      return this.battleEnabled;
+    },
+    duckBattle: function (seconds) {
+      seconds = seconds || 0.45;
+      this.battleDuckUntil = Math.max(this.battleDuckUntil || 0, (typeof performance !== "undefined" ? performance.now() : Date.now()) + seconds * 1000);
+      if (this.battle && !this.battle.paused) {
+        this.battle.volume = Math.max(0.04, this.battleBaseVol * 0.22);
+      }
+    },
+    tickBattleDuck: function () {
+      if (!this.battle || this.battle.paused || !this.battleEnabled) return;
+      var now = (typeof performance !== "undefined" ? performance.now() : Date.now());
+      if (now < (this.battleDuckUntil || 0)) {
+        this.battle.volume = Math.max(0.04, this.battleBaseVol * 0.22);
+      } else {
+        // ease back
+        var v = this.battle.volume;
+        var target = this.battleBaseVol;
+        this.battle.volume = v + (target - v) * 0.08;
+      }
+    },
     shout: function () {
       this.ensure();
       var t = this.ctx.currentTime;
@@ -561,6 +632,7 @@
     },
     revolver: function () {
       this.ensure();
+      this.duckBattle(0.4);
       var t = this.ctx.currentTime;
       var src = this.ctx.createBufferSource();
       src.buffer = this.noiseBuffer(0.12);
@@ -2952,6 +3024,9 @@
     if (point === 1) { state.gbRegiment = "24th Michigan"; state.gbBrigade = "Iron Brigade (Meredith)"; state.gbEnemy = "Archer's Brigade"; }
     else if (point === 2) { state.gbRegiment = "24th Michigan"; state.gbBrigade = "Iron Brigade remnant"; state.gbEnemy = "Pettigrew / Pender"; }
     else if (point === 3) { state.gbRegiment = "154th New York"; state.gbBrigade = "Coster's Brigade"; state.gbEnemy = "Early / Rodes pursuit"; }
+    if (point > 0 && typeof audio !== "undefined" && audio.startBattleMusic) {
+      audio.startBattleMusic();
+    }
     var meta = GB_POINT_META[point] || { day: 1, title: "Gettysburg", obj: "" };
     state.gbPointObj = objOverride || meta.obj;
     var el = document.getElementById("gbPoint");
@@ -3891,6 +3966,12 @@
     if (e.code === "Digit6" || e.code === "Numpad6") issueCompanyOrder("halt");
     if (e.code === "Digit7" || e.code === "Numpad7") issueCompanyOrder("charge");
     if (e.code === "Digit8" || e.code === "Numpad8") issueCompanyOrder("fallback");
+    if (e.code === "KeyM") {
+      var on = audio.toggleBattleMusic();
+      state.orderText = on ? "Battle music on (M)" : "Battle music muted (M)";
+      var tm = document.getElementById("tbMusic");
+      if (tm) tm.classList.toggle("on", on);
+    }
     if (e.code === "KeyF") {
       var now = performance.now();
       if (state._lastF && now - state._lastF < 350) {
@@ -5120,6 +5201,7 @@
   }
 
   function updateAI(dt) {
+    if (typeof audio !== "undefined" && audio.tickBattleDuck) audio.tickBattleDuck();
     if (state.photoMode) return;
     // Continuous march motion during march/charge
     if (state.formPhase === "march" && !state.charging) {
@@ -6600,6 +6682,12 @@
     holdBtn("tbSprint", function () { state.touchSprint = true; }, function () { state.touchSprint = false; });
     holdBtn("tbCrouch", function () { state._crouchSticky = !state._crouchSticky; });
     holdBtn("tbBandage", function () { beginBandage(); });
+    holdBtn("tbMusic", function () {
+      var on = audio.toggleBattleMusic();
+      var tm = document.getElementById("tbMusic");
+      if (tm) tm.classList.toggle("on", on);
+      state.orderText = on ? "Battle music on" : "Battle music muted";
+    });
     var orders = document.getElementById("touchOrders");
     function syncOfficerTouch() {
       var off = state.role === "officer";
@@ -6638,6 +6726,18 @@
     }, 400);
   })();
 
+
+  // Browser autoplay: unlock battle music on first gesture, start when a Point begins
+  (function bindAudioUnlock() {
+    var once = function () {
+      if (audio.battleUnlocked) return;
+      audio.unlockBattle();
+      if (audio.battleWanted) audio.startBattleMusic();
+    };
+    window.addEventListener("pointerdown", once, { passive: true });
+    window.addEventListener("keydown", once, { passive: true });
+    window.addEventListener("touchstart", once, { passive: true });
+  })();
   window.__WOTS__ = {
     net: net,
     getState: function () { return state; },

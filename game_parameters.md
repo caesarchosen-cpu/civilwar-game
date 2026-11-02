@@ -85,3 +85,12 @@ Officer is never called “host” in scenario text. No checkbox missions — co
 
 ## Stack
 Three.js r160 (vendored), single `index.html`, Node `ws` relay + static (`server/`, port 8787). Host-authoritative multiplayer.
+
+
+## Background battle music
+- File: `prototype/audio/battle_cry_of_freedom_1914.mp3` (LOC National Jukebox, Victor 1914; public domain pre-1923). Credits: `prototype/audio/CREDITS.md`.
+- HTMLAudio element (`audio.ensureBattle`), looped at ~0.28 volume.
+- **Trigger:** first click/tap/key unlocks autoplay; music **starts when a Gettysburg Point begins** (`setGbPoint` → `audio.startBattleMusic`).
+- **Toggle:** `M` key or touch **MUSIC** button (`audio.toggleBattleMusic`).
+- **Duck:** gunfire calls `audio.duckBattle`; `tickBattleDuck` restores volume.
+- Supplements procedural fife/drum; does not replace them.
