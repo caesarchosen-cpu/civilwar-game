@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -182,11 +185,25 @@
   @keyframes pulseBind { 50% { opacity: .7; } }
   #pauseOverlay {
     position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
-    background: radial-gradient(ellipse at center, rgba(20,24,14,.72), rgba(4,6,4,.92));
-    z-index: 28; pointer-events: auto;
+    background: radial-gradient(ellipse at center, rgba(20,24,14,.82), rgba(4,6,4,.94));
+    z-index: 60; pointer-events: auto !important;
   }
   #pauseOverlay.show { display: flex; }
-  #pauseOverlay .card { width: min(480px, 94vw); }
+  #pauseOverlay .card {
+    width: min(480px, 94vw); pointer-events: auto !important; position: relative; z-index: 61;
+  }
+  #pauseOverlay button, #pauseOverlay input, #pauseOverlay .bind-btn {
+    pointer-events: auto !important; cursor: pointer;
+  }
+  #menuBackdrop {
+    position: fixed; inset: 0; z-index: 15; display: none; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(90,70,40,.35), transparent 55%),
+      radial-gradient(ellipse at 70% 60%, rgba(40,50,30,.4), transparent 50%),
+      linear-gradient(180deg, #2a3020 0%, #12160e 55%, #0a0c08 100%);
+  }
+  #menuBackdrop.show { display: block; }
+  #overlay { z-index: 50; }
 
   #mpBanner.show { display: block !important; }
   #gbCourier {
@@ -323,12 +340,14 @@
     <button type="button" id="respawnBtn">Respawn behind the line</button>
   </div>
 </div>
+<div id="menuBackdrop" aria-hidden="true"></div>
 <div id="overlay">
   <div class="card" id="overlayCard" style="width:min(560px,94vw)">
     <!-- MAIN -->
     <div class="menu-view active" data-view="main">
       <h1>War of the States</h1>
       <p class="sub">Gettysburg field prototype · PC keyboard &amp; mouse</p>
+      <p id="buildVersionLabel" style="font-size:11px;color:#7a8068;margin:-6px 0 8px;letter-spacing:.06em">build —</p>
       <div class="menu-stack">
         <button type="button" id="menuSinglePlayer">Single Player</button>
         <button type="button" id="menuMultiplayer">Multiplayer</button>
@@ -471,6 +490,9 @@
 <script>
 (function () {
   "use strict";
+
+  var BUILD_VERSION = "2026.11.02e";
+  var ASSET_VER = BUILD_VERSION;
 
   // =====================================================================
   // War of the States — browser prototype
@@ -753,8 +775,8 @@
     // Battle music — continuous multi-track HTMLAudio (+ WebAudio on coarse pointers).
     // Loads on every device. M / panel cycles tracks; never pause on points/menus.
     battleTracks: [
-      { id: "battlecry", src: "audio/battle_cry_of_freedom_1914.mp3", label: "Battle Cry of Freedom (1914)" },
-      { id: "memories", src: "audio/memories_of_the_war_1915.mp3", label: "Memories of the War (1915)" }
+      { id: "battlecry", src: "audio/battle_cry_of_freedom_1914.mp3?v=" + ASSET_VER, label: "Battle Cry of Freedom (1914)" },
+      { id: "memories", src: "audio/memories_of_the_war_1915.mp3?v=" + ASSET_VER, label: "Memories of the War (1915)" }
     ],
     battleTrackIndex: 0, // 0..n-1 = playing track; n = off
     battle: null,
@@ -2786,7 +2808,8 @@
     viewmodel.position.set(viewmodelCurrent.x, viewmodelCurrent.y, viewmodelCurrent.z);
     var baseYaw = viewmodel.userData.baseYaw || 0;
     viewmodel.rotation.set(viewmodelCurrent.rx, viewmodelCurrent.ry + baseYaw, viewmodelCurrent.rz);
-    viewmodel.visible = state.running && state.player && state.player.alive;
+    viewmodel.visible = state.running && state.player && state.player.alive &&
+      state.role !== "artilleryOfficer" && state.role !== "spectator" && !state.paused;
 
     // FP articulated hands
     var handMode = "idle";
@@ -2948,6 +2971,8 @@
     formLine: "KeyF",
     musicCycle: "KeyM",
     pause: "KeyP",
+    companyHud: "KeyH",
+    spectatorOverview: "Tab",
     gunPrev: "KeyQ",
     gunNext: "KeyE",
     elevUp: "KeyW",
@@ -2961,7 +2986,6 @@
     order7: "Digit7",
     order8: "Digit8",
     order9: "Digit9",
-    scoreboard: "Tab"
   };
   var KEYBIND_LABELS = {
     moveForward: "Move forward",
@@ -2978,6 +3002,8 @@
     formLine: "Formation line (F)",
     musicCycle: "Cycle battle music",
     pause: "Pause",
+    companyHud: "Toggle company HUD",
+    spectatorOverview: "Spectator overhead map",
     gunPrev: "Prev gun (artillery)",
     gunNext: "Next gun (artillery)",
     elevUp: "Elevate gun (artillery)",
@@ -2991,7 +3017,6 @@
     order7: "Order: Charge",
     order8: "Order: Fall back",
     order9: "Order: Skirmish",
-    scoreboard: "Toggle company HUD"
   };
 
   function loadKeybinds() {
@@ -3170,15 +3195,41 @@
     if (name === "controls") renderKeybindLists();
   }
 
+  function setMenuBackdrop(on) {
+    var bd = document.getElementById("menuBackdrop");
+    if (bd) {
+      if (on) bd.classList.add("show"); else bd.classList.remove("show");
+      bd.setAttribute("aria-hidden", on ? "false" : "true");
+    }
+    // Hide battlefield draw when on menu
+    if (renderer && renderer.domElement) {
+      renderer.domElement.style.visibility = on ? "hidden" : "visible";
+    }
+  }
   function openMainMenu() {
     state.paused = false;
     state.running = false;
+    state.drawingLine = false;
+    state._specOverview = false;
+    try { clearDrawPreview(); } catch (e) {}
+    try { if (state.artyArc) { state.artyArc.visible = false; } } catch (e) {}
     var po = document.getElementById("pauseOverlay");
     if (po) { po.classList.remove("show"); po.setAttribute("aria-hidden", "true"); }
     overlay.classList.remove("hidden");
     hud.classList.add("hidden");
     crosshair.classList.add("hidden");
     if (companyHud) companyHud.style.display = "none";
+    var arty = document.getElementById("artyHud");
+    if (arty) arty.style.display = "none";
+    if (orderBanner) { orderBanner.style.display = "none"; orderBanner.textContent = ""; }
+    try { hideGbHud(); hideGbPoint(); closeGbCourier(); } catch (e) {}
+    var mpB = document.getElementById("mpBanner");
+    if (mpB) { mpB.classList.remove("show"); mpB.style.display = "none"; }
+    if (viewmodel) viewmodel.visible = false;
+    if (typeof fpHands !== "undefined" && fpHands && fpHands.root) fpHands.root.visible = false;
+    setMenuBackdrop(true);
+    var bv = document.getElementById("buildVersionLabel");
+    if (bv) bv.textContent = "build " + BUILD_VERSION;
     showMenuView("main");
     try { document.exitPointerLock(); } catch (e) {}
     audio.resume();
@@ -3188,9 +3239,15 @@
   function pauseGame() {
     if (!state.running || state.paused) return;
     state.paused = true;
+    state.drawingLine = false;
+    try { clearDrawPreview(); } catch (e) {}
     try { document.exitPointerLock(); } catch (e) {}
     var po = document.getElementById("pauseOverlay");
-    if (po) { po.classList.add("show"); po.setAttribute("aria-hidden", "false"); }
+    if (po) {
+      po.classList.add("show");
+      po.setAttribute("aria-hidden", "false");
+      po.style.pointerEvents = "auto";
+    }
     showPauseView("root");
   }
   function resumeGame() {
@@ -4393,6 +4450,14 @@
   function startGettysburgDayOne() {
     audio.resume();
     try { audio.stopMenuAmbient(800); } catch (e) {}
+    state._moraleFlash = null;
+    state.unionMorale = 100;
+    state.csaMorale = 100;
+    state._unionMoraleState = "steady";
+    state._csaMoraleState = "steady";
+    state._unionRalliedOnce = false;
+    state._csaRalliedOnce = false;
+    setMenuBackdrop(false);
     state.scenario = "gettysburg";
     state.gbBranch = null;
     state.gbPoint = 0;
@@ -4692,15 +4757,19 @@
     }
     state.keys[e.code] = true;
 
-    // Esc: release pointer lock; if in battle open pause (so Esc always reaches us)
+    // Esc: unlock pointer; pause opens via pointerlockchange and/or here if already unlocked
     if (e.code === "Escape") {
-      if (state.pointerLocked) {
-        try { document.exitPointerLock(); } catch (err) {}
-        // After unlock, a following Esc / or immediate pause if already unlocked next time
+      if (state.running && state.paused) {
+        // Second Esc while paused = stay paused (do not resume); use Resume button / P
+        return;
       }
-      if (state.running) {
-        if (state.paused) resumeGame();
-        else pauseGame();
+      if (state.running && state.pointerLocked) {
+        state._pauseOnUnlock = true;
+        try { document.exitPointerLock(); } catch (err) {}
+        return;
+      }
+      if (state.running && !state.paused) {
+        pauseGame();
       }
       return;
     }
@@ -4725,11 +4794,16 @@
         state.crouching = state._crouchSticky;
       }
     }
-    if (codeMatches(e, "scoreboard") && state.running) {
+    if (codeMatches(e, "companyHud") && state.running && state.role !== "spectator") {
       e.preventDefault();
       if (companyHud) {
         companyHud.style.display = (companyHud.style.display === "none" ? "block" : "none");
       }
+    }
+    if (codeMatches(e, "spectatorOverview") && state.running && state.role === "spectator") {
+      e.preventDefault();
+      state._specOverview = !state._specOverview;
+      state.orderText = state._specOverview ? "Overhead map (Tab to return)" : "Free fly (Tab for overhead)";
     }
     // M cycles battle music on any device / even at the menu
     if (codeMatches(e, "musicCycle")) {
@@ -4776,20 +4850,35 @@
   });
   window.addEventListener("keyup", function (e) {
     state.keys[e.code] = false;
-    if (codeMatches(e, "formLine") && state.drawingLine) endDrawLine();
+    if (codeMatches(e, "formLine")) {
+      if (state.drawingLine) endDrawLine();
+      else clearDrawPreview();
+    }
+  });
+  window.addEventListener("blur", function () {
+    if (state.drawingLine) endDrawLine();
+    clearDrawPreview();
+    state.drawingLine = false;
   });
   // When pointer lock drops via Esc, open pause if still running
   document.addEventListener("pointerlockchange", function () {
     var locked = document.pointerLockElement === renderer.domElement;
+    var wasLocked = state.pointerLocked;
     state.pointerLocked = locked;
-    if (!locked && state.running && !state.paused && !state.gbCourierOpen) {
-      // Soft pause affordance: do not auto-pause on every unlock (click UI), only when Esc requested
-      // Handled in keydown Escape path.
+    // First Esc while playing: browser releases lock — open pause menu
+    if (wasLocked && !locked && state.running && !state.paused && !state.gbCourierOpen) {
+      state._pauseOnUnlock = false;
+      pauseGame();
+      return;
+    }
+    if (!locked && state._pauseOnUnlock && state.running && !state.paused) {
+      state._pauseOnUnlock = false;
+      pauseGame();
     }
   });
 
   renderer.domElement.addEventListener("click", function () {
-    if (state.running) renderer.domElement.requestPointerLock();
+    if (state.running && !state.paused) renderer.domElement.requestPointerLock();
   });
   document.addEventListener("mousemove", function (e) {
     if (!state.pointerLocked || !state.running) return;
@@ -4824,12 +4913,31 @@
     audio.resume();
     try { audio.stopMenuAmbient(800); } catch (e) {}
     state.paused = false;
+    state.won = null;
+    state._moraleFlash = null;
+    state.unionMorale = 100;
+    state.csaMorale = 100;
+    state.unionSuppression = 0;
+    state.csaSuppression = 0;
+    state._unionMoraleState = "steady";
+    state._csaMoraleState = "steady";
+    state._unionRallyT = 0;
+    state._csaRallyT = 0;
+    state._unionRalliedOnce = false;
+    state._csaRalliedOnce = false;
+    state._specOverview = false;
     state.role = role;
+    setMenuBackdrop(false);
     spawnBattle();
     state.running = true;
     overlay.classList.add("hidden");
-    hud.classList.remove("hidden");
-    crosshair.classList.remove("hidden");
+    if (role === "spectator") {
+      hud.classList.add("hidden");
+      crosshair.classList.add("hidden");
+    } else {
+      hud.classList.remove("hidden");
+      crosshair.classList.remove("hidden");
+    }
     if (role === "officer") {
       companyHud.style.display = "block";
       document.getElementById("hint").innerHTML =
@@ -4853,8 +4961,11 @@
     } else if (role === "spectator") {
       companyHud.style.display = "none";
       document.getElementById("hint").textContent =
-        "Spectator · WASD fly · mouse look · Esc/P pause · no combat";
+        "Spectator · WASD fly · mouse look · Tab overhead · Esc or P pause · no combat";
       state.weaponsFree = false;
+      if (orderBanner) orderBanner.style.display = "none";
+      if (weaponTitle) weaponTitle.style.display = "none";
+
       // Lift camera for overview
       if (state.player) {
         state.player.y = sampleHeight(state.player.x, state.player.z) + 12;
@@ -4921,13 +5032,35 @@
     }
   });
 
+  function orderLabel(order) {
+    var map = {
+      ready: "Ready",
+      commenceFire: "Commence fire",
+      ceaseFire: "Cease fire",
+      load: "Load",
+      advanceToggle: "Advance / form",
+      halt: "Halt",
+      charge: "Charge",
+      fallback: "Fall back",
+      skirmish: "Skirmish",
+      fire: "Firing",
+      march: "March"
+    };
+    return map[order] || String(order || "—");
+  }
+  function modeLabel(mode) {
+    return mode === "loose" ? "Skirmish" : (mode === "formation" ? "Formation" : String(mode || "—"));
+  }
   function updateHudRole() {
+    if (weaponTitle) weaponTitle.style.display = (state.role === "spectator") ? "none" : "";
     if (state.role === "officer") {
       weaponTitle.innerHTML = 'Colt Army · <span id="ammoLabel">' + state.revolverAmmo + '</span> / 6';
       window._ammoLabel = document.getElementById("ammoLabel");
     } else if (state.role === "artilleryOfficer") {
-      weaponTitle.innerHTML = 'Napoleon 12-pdr · Battery · <span id="ammoLabel">—</span>';
+      weaponTitle.innerHTML = '3-in Ordnance Rifle · Calef A · <span id="ammoLabel">—</span>';
       window._ammoLabel = document.getElementById("ammoLabel");
+    } else if (state.role === "spectator") {
+      /* weapon panel hidden */
     } else {
       weaponTitle.innerHTML = 'Springfield · <span id="ammoLabel">' + state.ammo + '</span> rounds';
       window._ammoLabel = document.getElementById("ammoLabel");
@@ -5946,8 +6079,7 @@
     state.formLine = { ax: ax, az: az, bx: bx, bz: bz, faceYaw: built.faceYaw };
     assignCompanyToSlots(built.slots);
     if (state.scenario === "gettysburg") gbTryCommitFromPosition();
-    // Keep preview briefly then clear
-    setTimeout(function () { clearDrawPreview(); }, 2500);
+    clearDrawPreview();
   }
 
   function flipFormFacing() {
@@ -6043,6 +6175,7 @@
     s._coverUntil = state.clock + 2.5 + Math.random() * 2;
   }
 
+  var LOOSE_ANCHOR_YD = 35;
   function assignLooseCoverTargets(force) {
     if (state.companyMode !== "loose") return;
     var enemyPt = enemyFocusPoint("union");
@@ -6050,17 +6183,19 @@
     var men = state.union.filter(function (s) {
       return s.alive && !s.routed && !s.isPlayer && !s.noncombatant && !s.isMusician && !s.isColorBearer && !s.isGunner;
     });
-    // Company centroid for search origin
-    var cx = 0, cz = 0, n = 0;
-    for (var i = 0; i < men.length; i++) { cx += men[i].x; cz += men[i].z; n++; }
+    // Search from officer (company follows the officer, not the furthest skirmisher)
+    var ax = state.player ? state.player.x : 0, az = state.player ? state.player.z : 0;
+    var n = men.length;
     if (!n) return;
-    cx /= n; cz /= n;
-    var covers = coverCandidatesNear(cx, cz, 55);
-    // Prefer cover closer to enemy (leapfrog forward)
+    var cx = ax, cz = az;
+    var covers = coverCandidatesNear(cx, cz, LOOSE_ANCHOR_YD + 12);
+    // Prefer cover near officer, then slightly toward enemy
     covers.sort(function (a, b) {
+      var oa = Math.hypot(a.x - ax, a.z - az);
+      var ob = Math.hypot(b.x - ax, b.z - az);
       var da = Math.hypot(a.x - enemyPt.x, a.z - enemyPt.z);
       var db = Math.hypot(b.x - enemyPt.x, b.z - enemyPt.z);
-      return da - db;
+      return (oa * 1.4 + da * 0.4) - (ob * 1.4 + db * 0.4);
     });
     for (var mi = 0; mi < men.length; mi++) {
       var s = men[mi];
@@ -6078,7 +6213,8 @@
         if (count >= 3) continue;
         // Must be generally toward / not behind company retreat
         var toCover = Math.hypot(c.x - s.x, c.z - s.z);
-        if (toCover > 48) continue;
+        if (toCover > 40) continue;
+        if (Math.hypot(c.x - ax, c.z - az) > LOOSE_ANCHOR_YD + 8) continue;
         picked = c;
         used[key] = count + 1;
         claimCoverSlot(s, c, enemyPt, count + mi);
@@ -6115,36 +6251,61 @@
     if (reason) state.orderText = reason;
   }
 
+  function officerAnchorPoint() {
+    if (state.player) return { x: state.player.x, z: state.player.z };
+    return { x: 0, z: 0 };
+  }
   function updateLooseSkirmish(dt) {
     if (state.companyMode !== "loose") return;
     if (state._unionMoraleState === "broken" || state._unionMoraleState === "rallying") return;
+    var anchor = officerAnchorPoint();
+    var enemyPt = enemyFocusPoint("union");
+    // Detect officer leading forward (moved toward enemy since last sample)
+    var led = false;
+    if (state.player) {
+      var toE = Math.hypot(enemyPt.x - state.player.x, enemyPt.z - state.player.z);
+      if (state._officerLeadDist == null) state._officerLeadDist = toE;
+      // Officer closed distance to enemy OR explicit advance order
+      if (state._officerLeadDist - toE > 1.5) led = true;
+      state._officerLeadDist += (toE - state._officerLeadDist) * Math.min(1, 2 * dt);
+    }
+    if (state.advancing) led = true;
+
     state._skirmishTick = (state._skirmishTick || 0) - dt;
     if (state._skirmishTick <= 0) {
       state._skirmishTick = 1.8 + Math.random() * 1.4;
-      assignLooseCoverTargets(false);
+      // Only hop to new cover when officer leads / advance ordered / fallback / charge
+      if (led || state.fallback || state.charging) assignLooseCoverTargets(false);
     }
-    // Slow auto-advance of the company centroid toward enemy via slot nudges when not suppressed
-    if (state.unionSuppression < 50 && !state.fallback && !state.charging) {
-      var enemyPt = enemyFocusPoint("union");
-      for (var i = 0; i < state.union.length; i++) {
-        var s = state.union[i];
-        if (!s.alive || s.routed || s.isPlayer || s.noncombatant) continue;
-        if (s._coverUntil && state.clock < s._coverUntil - 1.2) continue;
-        var dx = enemyPt.x - s.slotX;
-        var dz = enemyPt.z - s.slotZ;
-        var len = Math.hypot(dx, dz) || 1;
-        // Creep slots forward slowly between cover hops
-        s.slotX += (dx / len) * 0.55 * dt;
-        s.slotZ += (dz / len) * 0.55 * dt;
+
+    for (var i = 0; i < state.union.length; i++) {
+      var s = state.union[i];
+      if (!s.alive || s.routed || s.isPlayer || s.noncombatant || s.isGunner || s.isCavalry) continue;
+      // Soft leash: keep slots within ~35 yd of officer
+      var adx = s.slotX - anchor.x, adz = s.slotZ - anchor.z;
+      var ad = Math.hypot(adx, adz);
+      if (ad > LOOSE_ANCHOR_YD) {
+        var pull = (ad - LOOSE_ANCHOR_YD) * Math.min(1, 2.2 * dt);
+        s.slotX -= (adx / ad) * pull;
+        s.slotZ -= (adz / ad) * pull;
+      }
+      // Advance cover-to-cover only when officer leads or order 5 (advancing)
+      if (led && !state.fallback && !state.charging && state.unionSuppression < 55) {
+        if (!(s._coverUntil && state.clock < s._coverUntil - 1.0)) {
+          var dx = enemyPt.x - s.slotX;
+          var dz = enemyPt.z - s.slotZ;
+          var len = Math.hypot(dx, dz) || 1;
+          s.slotX += (dx / len) * 1.6 * dt;
+          s.slotZ += (dz / len) * 1.6 * dt;
+        }
       }
     }
     if (state.fallback) {
-      var enemyPt2 = enemyFocusPoint("union");
       for (var j = 0; j < state.union.length; j++) {
         var u = state.union[j];
         if (!u.alive || u.routed || u.isPlayer || u.noncombatant) continue;
-        var edx = u.slotX - enemyPt2.x;
-        var edz = u.slotZ - enemyPt2.z;
+        var edx = u.slotX - enemyPt.x;
+        var edz = u.slotZ - enemyPt.z;
         var el = Math.hypot(edx, edz) || 1;
         u.slotX += (edx / el) * 3.2 * dt;
         u.slotZ += (edz / el) * 3.2 * dt;
@@ -6152,11 +6313,10 @@
       }
     }
     if (state.charging) {
-      var enemyPt3 = enemyFocusPoint("union");
       for (var k = 0; k < state.union.length; k++) {
         var v = state.union[k];
         if (!v.alive || v.routed || v.isPlayer || v.noncombatant) continue;
-        var cx2 = enemyPt3.x - v.x, cz2 = enemyPt3.z - v.z;
+        var cx2 = enemyPt.x - v.x, cz2 = enemyPt.z - v.z;
         var cl = Math.hypot(cx2, cz2) || 1;
         v.slotX = v.x + (cx2 / cl) * 8;
         v.slotZ = v.z + (cz2 / cl) * 8;
@@ -6372,7 +6532,7 @@
     }
     if (!state.artyArc) {
       var geo = new THREE.BufferGeometry().setFromPoints(pts);
-      state.artyArc = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xc4a35a, transparent: true, opacity: 0.55 }));
+      state.artyArc = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.85 }));
       scene.add(state.artyArc);
     } else {
       state.artyArc.geometry.dispose();
@@ -6381,29 +6541,138 @@
     }
   }
 
+  function spawnCannonProjectile(origin, dir, impact, side) {
+    var ball = new THREE.Mesh(
+      new THREE.SphereGeometry(0.22, 10, 8),
+      new THREE.MeshBasicMaterial({ color: 0x111111 })
+    );
+    ball.position.copy(origin);
+    scene.add(ball);
+    var trail = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.02, 1.8, 6),
+      new THREE.MeshBasicMaterial({ color: 0xffcc66, transparent: true, opacity: 0.75 })
+    );
+    trail.position.copy(origin);
+    scene.add(trail);
+    state.shells = state.shells || [];
+    state.shells.push({
+      mesh: ball, trail: trail, origin: origin.clone(), dir: dir.clone(),
+      impact: impact.clone(), t: 0, dur: 0.55, side: side
+    });
+  }
+  function spawnCannonImpact(pos) {
+    // Bright flash
+    var light = new THREE.PointLight(0xffaa44, 8, 40);
+    light.position.copy(pos); light.position.y += 1.2;
+    scene.add(light);
+    state.flashes.push({ mesh: light, life: 0.25 });
+    // Dirt burst
+    for (var i = 0; i < 14; i++) {
+      var mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2 + Math.random() * 0.35, 6, 5),
+        new THREE.MeshBasicMaterial({ color: i % 2 ? 0x5a4030 : 0x3a2a18 })
+      );
+      mesh.position.copy(pos);
+      mesh.position.y += 0.2;
+      scene.add(mesh);
+      state.smoke.push({
+        mesh: mesh, life: 0.7 + Math.random() * 0.6, max: 1.2,
+        vx: (Math.random() - 0.5) * 8, vy: 3 + Math.random() * 5, vz: (Math.random() - 0.5) * 8
+      });
+    }
+    // Smoke cloud
+    for (var j = 0; j < 8; j++) {
+      var sm = new THREE.Mesh(
+        new THREE.SphereGeometry(0.8 + Math.random() * 1.1, 8, 6),
+        MAT.smoke.clone()
+      );
+      sm.material.opacity = 0.55;
+      sm.position.copy(pos);
+      sm.position.y += 0.5 + Math.random();
+      scene.add(sm);
+      state.smoke.push({
+        mesh: sm, life: 5 + Math.random() * 4, max: 8,
+        vx: (Math.random() - 0.5) * 1.2, vy: 0.4 + Math.random() * 0.5, vz: (Math.random() - 0.5) * 1.2
+      });
+    }
+    // Crater decal
+    var crater = new THREE.Mesh(
+      new THREE.CircleGeometry(2.2 + Math.random() * 0.8, 16),
+      new THREE.MeshBasicMaterial({ color: 0x2a1a10, transparent: true, opacity: 0.75, depthSide: THREE.DoubleSide })
+    );
+    crater.rotation.x = -Math.PI / 2;
+    crater.position.set(pos.x, sampleHeight(pos.x, pos.z) + 0.04, pos.z);
+    scene.add(crater);
+    state.impacts = state.impacts || [];
+    state.impacts.push({ mesh: crater, life: 45, max: 45 });
+  }
+  function updateShells(dt) {
+    state.shells = state.shells || [];
+    for (var i = state.shells.length - 1; i >= 0; i--) {
+      var s = state.shells[i];
+      s.t += dt;
+      var u = Math.min(1, s.t / s.dur);
+      var p = s.origin.clone().lerp(s.impact, u);
+      p.y += Math.sin(u * Math.PI) * 6; // visible arc
+      if (s.mesh) s.mesh.position.copy(p);
+      if (s.trail) {
+        s.trail.position.copy(p);
+        s.trail.lookAt(p.clone().add(s.dir));
+        s.trail.rotateX(Math.PI / 2);
+        if (s.trail.material) s.trail.material.opacity = 0.75 * (1 - u);
+      }
+      if (u >= 1) {
+        spawnCannonImpact(s.impact);
+        if (s.mesh) { scene.remove(s.mesh); if (s.mesh.geometry) s.mesh.geometry.dispose(); }
+        if (s.trail) { scene.remove(s.trail); if (s.trail.geometry) s.trail.geometry.dispose(); }
+        state.shells.splice(i, 1);
+      }
+    }
+  }
   function fireSelectedGun() {
     var g = selectedGun();
     if (!g || !g.loaded || g.fireCd > 0) return false;
     if (g.ammo <= 0) { state.orderText = "Gun " + (state.battery.selected + 1) + " — limber empty"; return false; }
     var m = muzzleWorld(g);
-    // Cannonball: reuse musket ray with stronger damage via shooter flag
     var shooter = state.player;
     if (shooter) shooter._accMul = 1.6;
-    // Blast along aim: primary ray + splash
-    fireBall(m.origin, m.dir, "union", shooter, false);
-    // Splash damage near impact estimate
-    var impact = m.origin.clone().add(m.dir.clone().multiplyScalar(70));
+    var rangeYd = 80 + (g.elev || 0.08) * 900;
+    var impact = m.origin.clone().add(m.dir.clone().multiplyScalar(Math.min(220, Math.max(40, rangeYd * 0.35))));
     impact.y = sampleHeight(impact.x, impact.z);
+    spawnCannonProjectile(m.origin, m.dir, impact, "union");
+    fireBall(m.origin, m.dir, "union", shooter, false);
     for (var i = 0; i < state.csa.length; i++) {
       var e = state.csa[i];
       if (!e.alive || e.routed) continue;
       var d = Math.hypot(e.x - impact.x, e.z - impact.z);
-      if (d < 7) applyDamage(e, 35 + (7 - d) * 8, shooter, d < 2.5 ? "torso" : "leg", 0.2);
+      if (d < 9) applyDamage(e, 40 + (9 - d) * 8, shooter, d < 2.5 ? "torso" : "leg", 0.25);
     }
     if (shooter) shooter._accMul = 1;
+    // Bright muzzle flash + heavy smoke
+    var flash = new THREE.PointLight(0xffee88, 14, 36);
+    flash.position.copy(m.origin);
+    scene.add(flash);
+    state.flashes.push({ mesh: flash, life: 0.18 });
+    var flashMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.55, 10, 8),
+      new THREE.MeshBasicMaterial({ color: 0xfff0a0, transparent: true, opacity: 0.95 })
+    );
+    flashMesh.position.copy(m.origin);
+    scene.add(flashMesh);
+    state.flashes.push({ mesh: flashMesh, life: 0.12 });
     spawnMuzzleFX(m.origin, m.dir, false);
-    audio.musketCrack(false);
-    audio.duckBattle(0.7);
+    for (var k = 0; k < 6; k++) {
+      var sm = new THREE.Mesh(new THREE.SphereGeometry(0.7 + Math.random() * 0.6, 8, 6), MAT.smoke.clone());
+      sm.material.opacity = 0.5;
+      sm.position.copy(m.origin);
+      scene.add(sm);
+      state.smoke.push({
+        mesh: sm, life: 3 + Math.random() * 3, max: 5,
+        vx: m.dir.x * 2 + (Math.random() - 0.5), vy: 0.6 + Math.random() * 0.8, vz: m.dir.z * 2 + (Math.random() - 0.5)
+      });
+    }
+    if (audio.cannonBoom) audio.cannonBoom(false); else audio.musketCrack(false);
+    audio.duckBattle(0.85);
     g.ammo -= 1;
     g.fireCd = 0.8;
     beginGunReload(g);
@@ -6415,16 +6684,32 @@
     if (!isArtilleryOfficer() || !state.battery) return;
     var g = selectedGun();
     if (!g) return;
-    // Traverse: ease gun yaw toward camera yaw
-    var targetYaw = state.yaw + Math.PI; // camera 0 looks -Z; gun forward matches
+    // Traverse: ease gun yaw toward camera look (yaw only — elevation is wheel/W/S)
+    var targetYaw = state.yaw + Math.PI;
     var dy = targetYaw - g.yaw;
     while (dy > Math.PI) dy -= Math.PI * 2;
     while (dy < -Math.PI) dy += Math.PI * 2;
     g.yaw += dy * Math.min(1, 4 * dt);
     if (g.mesh) g.mesh.rotation.y = g.yaw;
-    // Elevation from pitch + artyElev
-    var elev = Math.max(-0.05, Math.min(0.35, (-state.pitch) * 0.9 + (state.artyElev || 0)));
-    g.elev = elev;
+    // Elevation ONLY from artyElev (mouse wheel / W/S) — not mouse pitch
+    g.elev = Math.max(-0.05, Math.min(0.35, state.artyElev != null ? state.artyElev : 0.08));
+    // Camera: slightly above/behind selected gun so arc is visible
+    var back = new THREE.Vector3(-Math.sin(g.yaw), 0, -Math.cos(g.yaw)); // behind muzzle
+    var camX = g.x + back.x * 5.5;
+    var camZ = g.z + back.z * 5.5;
+    var camY = sampleHeight(g.x, g.z) + 2.35;
+    if (state.player) {
+      state.player.x += (camX - state.player.x) * Math.min(1, 3 * dt);
+      state.player.z += (camZ - state.player.z) * Math.min(1, 3 * dt);
+      state.player.y = camY;
+      state.player.slotX = state.player.x;
+      state.player.slotZ = state.player.z;
+    }
+    camera.position.set(camX, camY, camZ);
+    // Keep look roughly along gun + slight pitch from mouse for surveying, not elev
+    camera.rotation.order = "YXZ";
+    camera.rotation.y = state.yaw;
+    camera.rotation.x = Math.max(-0.55, Math.min(0.25, state.pitch * 0.35));
     updateArtyArcPreview();
   }
 
@@ -6447,10 +6732,11 @@
     var idx = state.battery.selected + 1;
     var loadTxt = g.loaded ? "LOADED" : ("Loading — " + String(g.loadPhase || "?").toUpperCase());
     var elevDeg = ((g.elev || 0) * 180 / Math.PI).toFixed(1);
-    el.innerHTML = "<b>" + (state.battery.name || "Battery") + "</b> · Gun " + idx + "/" + state.battery.guns.length + " · " + loadTxt +
+    var gType = (g.gunType === "napoleon") ? "Napoleon 12-pdr" : "3-in Ordnance Rifle";
+    el.innerHTML = "<b>" + (state.battery.name || "Battery") + "</b> · " + gType + " · Gun " + idx + "/" + state.battery.guns.length + " · " + loadTxt +
       " · Elev " + elevDeg + "° · " + artilleryRangeReadout(g) +
       " · Crew " + g.crewAlive + "/4 · Rd " + g.ammo +
-      "<div style='opacity:.75;font-size:11px;margin-top:4px'>Q/E or 1–4 select gun · Wheel/W/S elevation · LMB fire · Infantry AI skirmishing</div>";
+      "<div style='opacity:.75;font-size:11px;margin-top:4px'>Q/E or 1–6 select gun · Wheel/W/S elevation (not mouse) · LMB fire</div>";
   }
 
 
@@ -7902,7 +8188,23 @@
 
     // Jump / vault
     if (state.role === "spectator") {
-      // Free-fly: jump up, crouch down — skip gravity/ground snap
+      if (state._specOverview) {
+        // Overhead tactical map
+        var ox = p.x, oz = p.z;
+        if (keyHeld("moveForward")) oz -= 28 * dt;
+        if (keyHeld("moveBack")) oz += 28 * dt;
+        if (keyHeld("moveLeft")) ox -= 28 * dt;
+        if (keyHeld("moveRight")) ox += 28 * dt;
+        p.x = ox; p.z = oz; p.y = sampleHeight(ox, oz) + 95;
+        camera.position.set(ox, p.y, oz);
+        camera.rotation.order = "YXZ";
+        camera.rotation.y = 0;
+        camera.rotation.x = -Math.PI / 2 + 0.05;
+        camera.fov = 55;
+        camera.updateProjectionMatrix();
+        return;
+      }
+      if (camera.fov !== 70) { camera.fov = 70; camera.updateProjectionMatrix(); }
       if (keyHeld("jump")) p.y += 14 * dt;
       if (keyHeld("crouch") || state._crouchSticky) p.y -= 14 * dt;
       p.y = Math.max(sampleHeight(nx, nz) + 1.5, p.y);
@@ -8053,8 +8355,13 @@
     for (i = state.impacts.length - 1; i >= 0; i--) {
       s = state.impacts[i];
       s.life -= dt;
-      s.mesh.scale.multiplyScalar(1 + 2.5 * dt);
-      if (s.mesh.material) s.mesh.material.opacity = Math.max(0, s.life / (s.max || 0.45));
+      // Short hits expand; long-lived crater decals stay put
+      if ((s.max || 0) < 5) s.mesh.scale.multiplyScalar(1 + 2.5 * dt);
+      if (s.mesh.material) {
+        var fade = Math.max(0, s.life / (s.max || 0.45));
+        if ((s.max || 0) >= 5) fade = Math.min(0.75, fade);
+        s.mesh.material.opacity = fade;
+      }
       if (s.life <= 0) {
         scene.remove(s.mesh);
         if (s.mesh.geometry) s.mesh.geometry.dispose();
@@ -8203,13 +8510,13 @@
 
     if ((state.role === "officer" || state.role === "artilleryOfficer") && companyHud) {
       var dCo = Math.round(distToCompany());
-      companyHud.textContent = "Company: " + String(state.companyOrder || "").toUpperCase() +
-        " · Mode " + String(state.companyMode || "").toUpperCase() +
+      companyHud.textContent = "Company: " + orderLabel(state.companyOrder) +
+        " · " + modeLabel(state.companyMode) +
         " · Loaded " + countLoaded("union") + " · " +
-        (state.weaponsFree ? "WEAPONS FREE" : "CEASE FIRE") +
-        (state.advancing ? " ADVANCING" : "") +
-        (state.fallback ? " FALLING BACK" : "") +
-        " · " + dCo + " yd from company" + (dCo > SHOUT_RANGE ? " (OUT OF EARSHOT)" : "");
+        (state.weaponsFree ? "Weapons free" : "Cease fire") +
+        (state.advancing ? " · Advancing" : "") +
+        (state.fallback ? " · Falling back" : "") +
+        " · " + dCo + " yd from company" + (dCo > SHOUT_RANGE ? " (out of earshot)" : "");
     }
 
     if (state.role === "artilleryOfficer") {
@@ -8286,6 +8593,7 @@
       updateBatteryLoading(dt);
       updateArtilleryOfficerControls(dt);
       syncArtilleryHud();
+      updateShells(dt);
     } catch (e) {}
 
     // Ambient drums during halt/reload
@@ -8981,6 +9289,13 @@
     if (closeBtn) closeBtn.addEventListener("click", hideMusicPanel);
   })();
 
+  // Show build version + menu backdrop on boot
+  (function bootMenuChrome() {
+    var bv = document.getElementById("buildVersionLabel");
+    if (bv) bv.textContent = "build " + BUILD_VERSION;
+    setMenuBackdrop(true);
+  })();
+
   // Continuous battle music: try autoplay on load; retry on first gesture if blocked.
   (function bindBattleMusicContinuous() {
     try { audio.tryAutoplayBattle(); } catch (e) {}
@@ -9017,6 +9332,7 @@
       Object.keys(net.remotes).forEach(function (rid) { ensureRemoteMesh(rid, "union"); });
       return true;
     },
+    BUILD_VERSION: BUILD_VERSION,
     startGettysburg: startGettysburgDayOne,
     openMainMenu: openMainMenu,
     pauseGame: pauseGame,
