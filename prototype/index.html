@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>War of the States — Field Prototype</title>
 <style>
   :root {
@@ -169,6 +172,74 @@
     padding: 6px 14px; border-radius: 4px; font-size: 12px; color: var(--ink); pointer-events: none;
   }
   #gbHud.show { display: block; }
+  #gbPoint {
+    display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+    z-index: 17; background: rgba(12,16,10,.9); border: 1px solid rgba(196,163,90,.55);
+    padding: 8px 18px; border-radius: 4px; text-align: center; pointer-events: none;
+    min-width: 280px; max-width: 92vw;
+  }
+  #gbPoint.show { display: block; }
+  #gbPoint .day { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #c4a35a; }
+  #gbPoint .title { font-size: 15px; color: #f3e6c0; margin-top: 2px; font-weight: 600; }
+  #gbPoint .obj { font-size: 12px; color: #b8c4a8; margin-top: 4px; }
+
+  /* ---- Responsive HUD + touch controls (phones) ---- */
+  @media (max-width: 900px), (pointer: coarse) {
+    #hud { padding: 8px 10px; }
+    .top-row { gap: 8px; font-size: 11px; flex-wrap: wrap; }
+    .side-stat { min-width: 0; flex: 1; padding: 6px 8px; }
+    #orderBanner { font-size: clamp(13px, 3.6vw, 18px); padding: 4px 12px; margin-top: 4px; }
+    .weapon-panel { min-width: 0; max-width: 58vw; padding: 8px 10px; }
+    .weapon-panel .step { font-size: 13px; }
+    #hint { display: none; }
+    .card { width: min(520px, 94vw); padding: 20px 18px; max-height: 90vh; overflow: auto; -webkit-overflow-scrolling: touch; }
+    .card h1 { font-size: 24px; }
+    .card button { width: 100%; margin: 6px 0; padding: 14px 16px; font-size: 16px; touch-action: manipulation; }
+    #gbPoint { top: max(6px, env(safe-area-inset-top)); min-width: 0; width: min(420px, 94vw); padding: 6px 12px; }
+    #gbHud { top: auto; bottom: auto; margin-top: 58px; font-size: 11px; max-width: 94vw; }
+    #companyHud { font-size: 11px !important; }
+  }
+  #touchUI {
+    display: none; position: fixed; inset: 0; z-index: 15; pointer-events: none;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  #touchUI.show { display: block; }
+  #touchJoy {
+    pointer-events: auto; position: absolute; left: max(12px, env(safe-area-inset-left));
+    bottom: max(18px, env(safe-area-inset-bottom)); width: 128px; height: 128px;
+    border-radius: 50%; background: rgba(18,22,14,.35); border: 2px solid rgba(196,163,90,.4);
+  }
+  #touchJoyKnob {
+    position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px;
+    border-radius: 50%; background: rgba(196,163,90,.55); border: 1px solid rgba(243,230,192,.5);
+  }
+  #touchLook {
+    pointer-events: auto; position: absolute; right: 0; top: 18%; width: 46%; height: 52%;
+    background: transparent;
+  }
+  .touchBtn {
+    pointer-events: auto; position: absolute; width: 58px; height: 58px; border-radius: 50%;
+    border: 1px solid rgba(196,163,90,.55); background: rgba(28,34,20,.72); color: #f3e6c0;
+    font: 600 11px/1.1 system-ui, sans-serif; text-align: center; touch-action: manipulation;
+    display: flex; align-items: center; justify-content: center; padding: 4px;
+  }
+  .touchBtn:active, .touchBtn.on { background: rgba(60,78,40,.9); border-color: #f0d78a; }
+  .touchBtn.wide { width: 72px; height: 44px; border-radius: 10px; font-size: 12px; }
+  #tbFire { right: max(18px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom)); width: 76px; height: 76px; font-size: 13px; background: rgba(100,40,28,.75); }
+  #tbAim { right: max(100px, calc(env(safe-area-inset-right) + 90px)); bottom: max(28px, env(safe-area-inset-bottom)); }
+  #tbReload { right: max(18px, env(safe-area-inset-right)); bottom: max(110px, calc(env(safe-area-inset-bottom) + 90px)); }
+  #tbSprint { left: max(150px, calc(env(safe-area-inset-left) + 140px)); bottom: max(28px, env(safe-area-inset-bottom)); }
+  #tbCrouch { left: max(150px, calc(env(safe-area-inset-left) + 140px)); bottom: max(96px, calc(env(safe-area-inset-bottom) + 70px)); }
+  #tbBandage { left: max(214px, calc(env(safe-area-inset-left) + 204px)); bottom: max(28px, env(safe-area-inset-bottom)); }
+  #touchOrders {
+    pointer-events: none; position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: max(8px, env(safe-area-inset-bottom)); display: none; gap: 4px; flex-wrap: wrap;
+    justify-content: center; max-width: 96vw;
+  }
+  #touchOrders.show { display: flex; }
+  #touchOrders .touchBtn { position: relative; left: auto; right: auto; bottom: auto; width: 40px; height: 40px; font-size: 10px; pointer-events: auto; }
+  #tbDraw { right: max(18px, env(safe-area-inset-right)); top: max(96px, calc(env(safe-area-inset-top) + 72px)); width: 70px; height: 44px; border-radius: 10px; }
+  #tbFlip { right: max(96px, calc(env(safe-area-inset-right) + 78px)); top: max(96px, calc(env(safe-area-inset-top) + 72px)); width: 70px; height: 44px; border-radius: 10px; }
 </style>
 </head>
 <body>
@@ -219,15 +290,15 @@
 <div id="overlay">
   <div class="card" id="overlayCard" style="width:min(560px,94vw)">
     <h1>War of the States</h1>
-    <p class="sub">Field prototype · host-authoritative multiplayer</p>
-    <p>Host as Officer creates a room. Joiners spawn as Union Privates under that officer. Empty slots are AI; Confederates are AI.</p>
+    <p class="sub">Field prototype · officer single-player · host-authoritative multiplayer</p>
+    <p>Single-player always puts you in as the <b>officer</b>. Host as Officer creates a room; joiners spawn as Union Privates under that officer. Empty slots are AI; Confederates are AI.</p>
     <ul>
-      <li><b>Solo</b> — offline private or officer (no server)</li>
+      <li><b>Solo Officer</b> — offline skirmish (no server); you are the officer</li>
+      <li><b>Gettysburg Day One</b> — continuous field, three Points; you are the officer</li>
       <li><b>Host as Officer</b> — creates room code · LAN address shown</li>
       <li><b>Join</b> — enter server + room code · Union Private only</li>
     </ul>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
-      <button type="button" id="startPrivate">Solo Private</button>
       <button type="button" id="startOfficer">Solo Officer</button>
       <button type="button" id="startGettysburg">Gettysburg Day One</button>
       <button type="button" id="hostOfficer">Host as Officer</button>
@@ -258,12 +329,35 @@
   <div class="card">
     <h1>Courier</h1>
     <p class="sub">Gettysburg · morning of July 1, 1863</p>
-    <p id="gbCourierBody">A dusty courier reins up beside you on the field. Confederate columns are reported coming down from the north on the Chambersburg Pike and the Carlisle Road.</p>
-    <p style="font-size:13px;color:var(--muted)">This briefing is not your decision. Lead and form the company on the ground: <b>McPherson’s Ridge</b> to hold the advanced line, <b>Seminary Ridge</b> for the fallback line, or march through town to <b>Cemetery Hill</b> to withdraw. Draw your formation line (F / MMB) on that ground — the company commits where you form.</p>
+    <p id="gbCourierBody">A dusty courier reins up beside you on the field. Confederate columns are reported coming down from the north on the Chambersburg Pike and the Carlisle Road. Day One will play as three points on one continuous field.</p>
+    <p style="font-size:13px;color:var(--muted)">This briefing is not your decision. Lead and form the company on the ground: <b>McPherson’s Ridge</b> opens Point 1 (stand), <b>Seminary Ridge</b> opens Point 2 (fighting withdrawal), or march through town toward <b>Cemetery Hill</b> to open Point 3 (street retreat). Draw your formation line (F / MMB) on that ground — the company commits where you form.</p>
     <button type="button" id="gbBriefingOk">Understood — return to the field</button>
   </div>
 </div>
+<div id="gbPoint" aria-live="polite"><div class="day">Day 1 · Point 1</div><div class="title">McPherson’s Ridge</div><div class="obj">Form on the fence and hold</div></div>
 <div id="gbHud"></div>
+<div id="touchUI" aria-hidden="true">
+  <div id="touchJoy"><div id="touchJoyKnob"></div></div>
+  <div id="touchLook"></div>
+  <button type="button" class="touchBtn" id="tbFire">FIRE</button>
+  <button type="button" class="touchBtn" id="tbAim">AIM</button>
+  <button type="button" class="touchBtn" id="tbReload">RELOAD</button>
+  <button type="button" class="touchBtn" id="tbSprint">SPRINT</button>
+  <button type="button" class="touchBtn" id="tbCrouch">CROUCH</button>
+  <button type="button" class="touchBtn" id="tbBandage">BANDAGE</button>
+  <button type="button" class="touchBtn wide" id="tbDraw" style="display:none">DRAW LINE</button>
+  <button type="button" class="touchBtn wide" id="tbFlip" style="display:none">FLIP FACE</button>
+  <div id="touchOrders">
+    <button type="button" class="touchBtn" data-order="ready">1 RDY</button>
+    <button type="button" class="touchBtn" data-order="commenceFire">2 OPEN</button>
+    <button type="button" class="touchBtn" data-order="ceaseFire">3 CEASE</button>
+    <button type="button" class="touchBtn" data-order="load">4 LOAD</button>
+    <button type="button" class="touchBtn" data-order="advanceToggle">5 ADV</button>
+    <button type="button" class="touchBtn" data-order="halt">6 HALT</button>
+    <button type="button" class="touchBtn" data-order="charge">7 CHG</button>
+    <button type="button" class="touchBtn" data-order="fallback">8 FALL</button>
+  </div>
+</div>
 
 <script src="vendor/three.min.js"></script>
 <script>
@@ -318,7 +412,6 @@
   var gameEl = document.getElementById("game");
   var overlay = document.getElementById("overlay");
   var overlayCard = document.getElementById("overlayCard");
-  var startPrivateBtn = document.getElementById("startPrivate");
   var startOfficerBtn = document.getElementById("startOfficer");
   var companyHud = document.getElementById("companyHud");
   var weaponTitle = document.getElementById("weaponTitle");
@@ -405,15 +498,44 @@
     drumPulse: function () {
       this.ensure();
       var t = this.ctx.currentTime;
+      // Field snare-ish: noise burst + low body
+      var src = this.ctx.createBufferSource();
+      src.buffer = this.noiseBuffer(0.08);
+      var hp = this.ctx.createBiquadFilter();
+      hp.type = "highpass"; hp.frequency.value = 1800; hp.Q.value = 0.7;
+      var g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.22, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+      src.connect(hp); hp.connect(g); g.connect(this.master);
+      src.start(t); src.stop(t + 0.1);
       var osc = this.ctx.createOscillator();
       osc.type = "sine";
-      osc.frequency.setValueAtTime(80, t);
-      osc.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+      osc.frequency.setValueAtTime(90, t);
+      osc.frequency.exponentialRampToValueAtTime(50, t + 0.1);
+      var og = this.ctx.createGain();
+      og.gain.setValueAtTime(0.1, t);
+      og.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      osc.connect(og); og.connect(this.master);
+      osc.start(t); osc.stop(t + 0.15);
+    },
+    // Procedural fife — musicians only (not the color bearer)
+    fifeNote: function () {
+      this.ensure();
+      var t = this.ctx.currentTime;
+      var notes = [587.33, 659.25, 783.99, 880.0, 783.99, 659.25]; // D5 E5 G5 A5 …
+      this._fifeI = (this._fifeI || 0) % notes.length;
+      var freq = notes[this._fifeI++];
+      var osc = this.ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, t);
+      var bp = this.ctx.createBiquadFilter();
+      bp.type = "bandpass"; bp.frequency.value = freq * 2; bp.Q.value = 2;
       var g = this.ctx.createGain();
-      g.gain.setValueAtTime(0.12, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-      osc.connect(g); g.connect(this.master);
-      osc.start(t); osc.stop(t + 0.22);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.05, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+      osc.connect(bp); bp.connect(g); g.connect(this.master);
+      osc.start(t); osc.stop(t + 0.3);
     },
     shout: function () {
       this.ensure();
@@ -927,29 +1049,45 @@
 
   function makeFlag(side) {
     var g = new THREE.Group();
-    var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.018, 2.4, 6), MAT.wood);
-    pole.position.y = 1.2;
+    var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.018, 2.55, 6), MAT.wood);
+    pole.position.y = 1.25;
     g.add(pole);
+    var finial = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), MAT.brass);
+    finial.position.y = 2.52;
+    g.add(finial);
     var cloth = new THREE.Group();
-    cloth.position.set(0.02, 2.05, 0);
+    cloth.position.set(0.02, 2.15, 0);
     if (side === "union") {
-      var field = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.7), MAT.flagRed);
+      // National colors (Stars and Stripes stylized)
+      var field = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.72), MAT.flagRed);
       cloth.add(field);
-      var canton = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.35), MAT.flagBlue);
-      canton.position.set(-0.35, 0.17, 0.01);
+      var fieldB = field.clone(); fieldB.position.z = -0.01; fieldB.rotation.y = Math.PI; cloth.add(fieldB);
+      var canton = new THREE.Mesh(new THREE.PlaneGeometry(0.48, 0.38), MAT.flagBlue);
+      canton.position.set(-0.36, 0.17, 0.012);
       cloth.add(canton);
-      // simple star dots
-      for (var i = 0; i < 6; i++) {
-        var star = new THREE.Mesh(new THREE.SphereGeometry(0.025, 4, 3), MAT.flagWhite);
-        star.position.set(-0.48 + (i % 3) * 0.12, 0.28 - Math.floor(i / 3) * 0.14, 0.02);
+      for (var i = 0; i < 9; i++) {
+        var star = new THREE.Mesh(new THREE.SphereGeometry(0.022, 4, 3), MAT.flagWhite);
+        star.position.set(-0.52 + (i % 3) * 0.12, 0.30 - Math.floor(i / 3) * 0.13, 0.02);
         cloth.add(star);
       }
-      // white stripes suggestion
-      for (var s = 0; s < 3; s++) {
-        var stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.06), MAT.flagWhite);
-        stripe.position.set(0.2, -0.22 + s * 0.14, 0.01);
+      for (var s = 0; s < 4; s++) {
+        var stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.055), MAT.flagWhite);
+        stripe.position.set(0.22, -0.26 + s * 0.13, 0.012);
         cloth.add(stripe);
       }
+      // Regimental color (blue silk with gold fringe cue) — carried as second cloth lower on pole
+      var reg = new THREE.Group();
+      reg.position.set(0.02, 1.35, 0.02);
+      var regField = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.55), MAT.flagBlue);
+      reg.add(regField);
+      var regFringe = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.04), MAT.brass);
+      regFringe.position.y = -0.3;
+      reg.add(regFringe);
+      var eagle = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 5), MAT.brass);
+      eagle.position.set(0, 0.05, 0.02);
+      reg.add(eagle);
+      g.add(reg);
+      g.userData.regimental = reg;
     } else {
       var battle = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.95), MAT.flagRed);
       battle.rotation.z = Math.PI / 4;
@@ -1301,6 +1439,8 @@
     var g = new THREE.Group();
     var isOfficer = !!opts.officer;
     var isColor = !!opts.colorBearer;
+    var isDrummer = !!opts.drummer;
+    var isFifer = !!opts.fifer;
     var seed = Math.random();
     var csaButter = side === "csa" && seed > 0.45;
     var coatBase = side === "union"
@@ -1580,16 +1720,49 @@
     roll.castShadow = true;
     torsoPivot.add(roll);
 
-    // Weapon / colors
+    // Weapon / colors / instruments (color bearer carries colors only — no music)
     var rifle = null;
     if (isColor) {
       var flag = makeFlag(side);
-      flag.position.set(0.15, 0, -0.05);
+      flag.position.set(0.18, 0, -0.02);
       g.add(flag);
       g.userData.flag = flag;
+      // Slung musket only — bearer does not fire while on colors
       rifle = makeRifleMusket({ bayonet: false });
-      rifle.scale.setScalar(0.95);
+      rifle.scale.setScalar(0.9);
+      rifle.visible = false;
       g.add(rifle);
+    } else if (isDrummer) {
+      var drum = new THREE.Group();
+      var shell = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.28, 14), new THREE.MeshStandardMaterial({ color: 0x7a2430, roughness: 0.7 }));
+      shell.rotation.x = Math.PI / 2;
+      drum.add(shell);
+      var head = new THREE.Mesh(new THREE.CylinderGeometry(0.215, 0.215, 0.02, 14), new THREE.MeshStandardMaterial({ color: 0xf0e6d0, roughness: 0.85 }));
+      head.position.z = 0.14; head.rotation.x = Math.PI / 2; drum.add(head);
+      var hoop = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.015, 6, 16), MAT.brass);
+      hoop.position.z = 0.14; drum.add(hoop);
+      drum.position.set(0.12, 0.95, 0.22);
+      drum.rotation.set(0.15, 0, 0.1);
+      g.add(drum);
+      g.userData.drum = drum;
+      // Sticks in hands (simple)
+      var stickL = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.32, 5), MAT.wood);
+      stickL.position.set(-0.22, 1.15, 0.25); stickL.rotation.z = 0.6; g.add(stickL);
+      var stickR = stickL.clone(); stickR.position.x = 0.28; stickR.rotation.z = -0.5; g.add(stickR);
+      g.userData.stickL = stickL; g.userData.stickR = stickR;
+      rifle = null;
+    } else if (isFifer) {
+      var fife = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.014, 0.42, 8), new THREE.MeshStandardMaterial({ color: 0xd8c8a0, metalness: 0.15, roughness: 0.55 }));
+      fife.rotation.z = Math.PI / 2;
+      fife.position.set(0.05, 1.42, 0.28);
+      g.add(fife);
+      g.userData.fife = fife;
+      for (var fh = 0; fh < 4; fh++) {
+        var hole = new THREE.Mesh(new THREE.SphereGeometry(0.008, 5, 4), new THREE.MeshStandardMaterial({ color: 0x1a120c }));
+        hole.position.set(-0.08 + fh * 0.06, 1.42, 0.295);
+        g.add(hole);
+      }
+      rifle = null;
     } else if (isOfficer) {
       var sword = new THREE.Group();
       var blade = new THREE.Mesh(new THREE.CapsuleGeometry(0.012, 0.62, 3, 6), MAT.steel);
@@ -1628,6 +1801,9 @@
     g.userData.lookSeed = Math.random() * Math.PI * 2;
     g.userData.flinchT = 0;
     g.userData.isColor = isColor;
+    g.userData.isDrummer = isDrummer;
+    g.userData.isFifer = isFifer;
+    g.userData.isMusician = isDrummer || isFifer;
     g.userData.isOfficerMesh = isOfficer;
     if (rifle) poseSoldierRifle(g, "shoulder", side);
     return g;
@@ -2139,6 +2315,16 @@
       viewmodelCurrent.y += state.recoilKick * 0.02;
       state.recoilKick = Math.max(0, state.recoilKick - dt * 4.5);
     }
+    // Player weapon sway — visible drift of musket / sights
+    if (state.player && state.player.alive) {
+      updateWeaponSway(state.player, dt, "union");
+      var psw = state.player._sway || { yaw: 0, pitch: 0, amp: 0 };
+      viewmodelCurrent.x += psw.yaw * 0.55;
+      viewmodelCurrent.y += psw.pitch * 0.45;
+      viewmodelCurrent.rz += psw.yaw * 0.25;
+      viewmodelCurrent.rx += psw.pitch * 0.35;
+      state._swayDebug = psw;
+    }
     viewmodel.position.set(viewmodelCurrent.x, viewmodelCurrent.y, viewmodelCurrent.z);
     var baseYaw = viewmodel.userData.baseYaw || 0;
     viewmodel.rotation.set(viewmodelCurrent.rx, viewmodelCurrent.ry + baseYaw, viewmodelCurrent.rz);
@@ -2224,8 +2410,12 @@
     charging: false,
     photoMode: false,
     role: "private", // private | officer
-    companyOrder: "halt", // ready|aim|fire|load|fireAtWill|advance|halt|charge|fallback
-    fireAtWill: false,
+    companyOrder: "halt", // ready|commenceFire|ceaseFire|load|advance|halt|charge|fallback
+    weaponsFree: true, // independent fire always; this only gates engage/hold
+    touchMove: { x: 0, y: 0 },
+    touchSprint: false,
+    touchLookActive: false,
+    isTouchUI: false,
     advancing: false,
     fallback: false,
     readySet: false,
@@ -2243,21 +2433,48 @@
     formSlots: null,
     lineFlip: false,
     scenario: null, // null | "gettysburg"
-    gbBranch: null, // null | "hold" | "fallback"
+    gbBranch: null, // null | "hold" | "fallback" (legacy commit) | point-driven
+    gbDay: 1,
+    gbPoint: 0, // 1 McPherson stand · 2 Seminary fighting withdrawal · 3 town retreat
+    gbRegiment: "24th Michigan",
+    gbBrigade: "Iron Brigade (Meredith)",
+    gbEnemy: "Archer's Brigade",
     gbTimer: 0,
-    gbHoldLimit: 540, // ~9 minutes
+    gbHoldLimit: 420, // Point 1 hold window
     gbWave: 0,
-    gbWaveMax: 4,
+    gbWaveMax: 3,
     gbWaveCd: 0,
     gbRelief: false,
     gbReachedHill: 0,
     gbCourierOpen: false,
-    gbProps: null
+    gbProps: null,
+    gbBoundPhase: "fall", // fire | fall — Point 2 bounds
+    gbBoundTimer: 0,
+    gbBoundsFired: 0,
+    gbRearGuard: false,
+    gbBrickyardHold: 0,
+    gbBrickyardDone: false,
+    gbCutOffCount: 0,
+    gbFlankWaveCd: 0,
+    gbPointObj: "",
+    _moraleFlash: null,
+    _unionMoraleState: "steady", // steady|wavering|broken|rallying
+    _csaMoraleState: "steady",
+    _unionRallyT: 0,
+    _csaRallyT: 0,
+    _unionRalliedOnce: false,
+    _csaRalliedOnce: false
   };
 
-  function Soldier(x, z, side, isPlayer) {
+  function Soldier(x, z, side, isPlayer, roleOpts) {
+    roleOpts = roleOpts || {};
     this.side = side;
     this.isPlayer = !!isPlayer;
+    this.isColorBearer = !!roleOpts.colorBearer;
+    this.isDrummer = !!roleOpts.drummer;
+    this.isFifer = !!roleOpts.fifer;
+    this.isMusician = this.isDrummer || this.isFifer;
+    this.noncombatant = this.isMusician || this.isColorBearer; // no firing
     this.hp = 100;
     this.maxHp = 100;
     this.alive = true;
@@ -2271,6 +2488,12 @@
     this.crawl = false;
     this.bandaging = false;
     this.bandageT = 0;
+    this.swayT = Math.random() * 100;
+    this.swayAmp = 0.012 + Math.random() * 0.006;
+    this.veteran = Math.random() < 0.28;
+    this._postSprint = 0;
+    this.fireCd = 1.5 + Math.random() * 3;
+    this.reloadRate = 0.85 + Math.random() * 0.35;
     this.deathT = 0;
     this.deathSide = Math.random() < 0.5 ? -1 : 1;
     this.loaded = true;
@@ -2285,7 +2508,7 @@
     this.face = side === "union" ? -1 : 1;
     this.kills = 0;
     this.roleFlags = {};
-    this.mesh = isPlayer ? null : makeSoldierMesh(side, {});
+    this.mesh = isPlayer ? null : makeSoldierMesh(side, roleOpts);
     if (this.mesh) {
       var y = sampleHeight(x, z);
       this.mesh.position.set(x, y, z);
@@ -2370,9 +2593,20 @@
     culpZ: -88,
     pikeZ: 8,
     rrCutZ: 2,
+    // Kuhn's brickyard — northern town rear-guard block (Point 3)
+    brickX: -6,
+    brickZ: -14,
     zoneMcPhersonR: 22,
     zoneSeminaryR: 20,
-    zoneCemeteryR: 24
+    zoneCemeteryR: 24,
+    zoneBrickyardR: 14,
+    zoneTownEntryZ: -2
+  };
+
+  var GB_POINT_META = {
+    1: { day: 1, title: "McPherson’s / Herbst Woods", obj: "Hold the fence crest — or lead east to fight a withdrawal" },
+    2: { day: 1, title: "Seminary fighting withdrawal", obj: "Fall back by bounds — fire independently, then peel toward town" },
+    3: { day: 1, title: "Retreat through town", obj: "Rear-guard the brickyard or keep the column — reach Cemetery Hill" }
   };
 
   function gbHeight(x, z) {
@@ -2495,11 +2729,12 @@
       colliders.push({ type: "fence", x: fx + 1.2, z: GB.ridgeZ, r: 0.6, h: 1.0, vaultable: true, gb: true });
     }
 
-    // Simple town grid (block buildings) — continuous streets to fight through
+    // Town grid — denser blocks, alleys, and fences for street fighting (Point 3)
     var blocks = [
       [0, -5, 8, 6], [14, -5, 7, 6], [-12, -5, 7, 5],
       [0, -20, 9, 6], [15, -22, 6, 7], [-14, -22, 7, 6],
-      [2, -36, 8, 5], [16, -38, 6, 5], [-10, -38, 7, 5]
+      [2, -36, 8, 5], [16, -38, 6, 5], [-10, -38, 7, 5],
+      [22, -12, 5, 5], [-20, -12, 5, 6], [8, -50, 6, 5], [-4, -52, 7, 5]
     ];
     for (var bi = 0; bi < blocks.length; bi++) {
       var b = blocks[bi];
@@ -2508,6 +2743,48 @@
       var by = gbHeight(bx, bz) + bh * 0.5;
       addGbBox(g, bw, bh, bd, bx, by, bz, brick, false);
     }
+    // Yard fences along alleys (cover + channel the column)
+    var fenceM = new THREE.MeshStandardMaterial({ color: 0x5a4632, roughness: 0.95 });
+    var fenceSpans = [
+      [-4, -8, 0.15, 1.1, 6], [10, -8, 0.15, 1.1, 6],
+      [-4, -28, 0.15, 1.1, 7], [10, -28, 0.15, 1.1, 7],
+      [-18, -18, 5, 1.05, 0.15], [18, -18, 5, 1.05, 0.15]
+    ];
+    for (var fi = 0; fi < fenceSpans.length; fi++) {
+      var f = fenceSpans[fi];
+      var fy = gbHeight(f[0], f[1]) + f[3] * 0.5;
+      addGbBox(g, f[2], f[3], f[4], f[0], fy, f[1], fenceM, true);
+    }
+    // Kuhn's brickyard — kiln stacks + shed (Point 3 rear-guard landmark)
+    (function buildBrickyard() {
+      var redBrick = new THREE.MeshStandardMaterial({ color: 0x8a4030, roughness: 0.9 });
+      var kilnM = new THREE.MeshStandardMaterial({ color: 0x6a3228, roughness: 0.85 });
+      var shedM = new THREE.MeshStandardMaterial({ color: 0x7a6a52, roughness: 0.92 });
+      var bx = GB.brickX, bz = GB.brickZ, by = gbHeight(bx, bz);
+      addGbBox(g, 10, 3.4, 8, bx, by + 1.7, bz, redBrick, false);
+      // Kiln chimneys
+      for (var k = -1; k <= 1; k++) {
+        var kiln = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.95, 4.2, 8), kilnM);
+        kiln.position.set(bx + k * 2.4, by + 2.1, bz - 5.2);
+        kiln.castShadow = true; g.add(kiln);
+        colliders.push({ type: "fence", x: bx + k * 2.4, z: bz - 5.2, r: 1.0, h: 4, vaultable: false, gb: true });
+      }
+      addGbBox(g, 6, 2.4, 4, bx + 7, by + 1.2, bz + 1, shedM, false);
+      // Stacked brick piles
+      for (var pi = 0; pi < 5; pi++) {
+        var pile = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.9 + (pi % 3) * 0.25, 1.2), redBrick);
+        pile.position.set(bx - 6 + pi * 1.7, by + 0.5, bz + 5.5);
+        pile.castShadow = true; g.add(pile);
+        colliders.push({ type: "fence", x: bx - 6 + pi * 1.7, z: bz + 5.5, r: 0.9, h: 1.1, vaultable: true, gb: true });
+      }
+      // Low brick yard wall facing north (rear-guard cover)
+      for (var wx = -5; wx <= 5; wx += 2.2) {
+        var ww = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.15, 0.35), redBrick);
+        ww.position.set(bx + wx, by + 0.55, bz + 7.5);
+        g.add(ww);
+        colliders.push({ type: "fence", x: bx + wx, z: bz + 7.5, r: 0.85, h: 1.15, vaultable: true, gb: true });
+      }
+    })();
 
     // Cemetery Hill marker ring / low wall
     for (var a = 0; a < Math.PI * 2; a += 0.55) {
@@ -2630,6 +2907,73 @@
     el.classList.remove("show");
   }
 
+  // On retreat to the next point / rally: restore 25% of lost morale once. No soldiers return.
+  function restoreMoraleOnRetreat(side, reason) {
+    side = side || "union";
+    var key = side === "union" ? "unionMorale" : "csaMorale";
+    var cur = state[key];
+    if (typeof cur !== "number") return 0;
+    var gained = 0.25 * (100 - cur);
+    if (gained < 0.5) return 0;
+    var next = Math.min(100, cur + gained);
+    gained = next - cur;
+    state[key] = next;
+    state._moraleFlash = {
+      side: side,
+      amount: gained,
+      text: "+" + Math.round(gained) + "% morale",
+      t: 2.8,
+      reason: reason || "retreat"
+    };
+    if (side === "union") {
+      showGbHud((reason || "Retreat") + " — +" + Math.round(gained) + "% morale restored");
+    }
+    return gained;
+  }
+
+  function moraleStateLabel(side) {
+    var m = side === "union" ? state.unionMorale : state.csaMorale;
+    var st = side === "union" ? state._unionMoraleState : state._csaMoraleState;
+    if (st === "rallying") return "Rallying";
+    if (st === "broken" || m < 18) return "Broken";
+    if (m < 40) return "Wavering";
+    if (m < 70) return "Wavering";
+    return "Steady";
+  }
+
+  function setGbPoint(point, objOverride) {
+    var prev = state.gbPoint || 0;
+    state.gbDay = 1;
+    // Retreating forward through Day One points → one morale restore per retreat hop
+    if (point > prev && prev > 0 && state.scenario === "gettysburg") {
+      restoreMoraleOnRetreat("union", "Day 1 Point " + prev + " → " + point);
+    }
+    state.gbPoint = point;
+    if (point === 1) { state.gbRegiment = "24th Michigan"; state.gbBrigade = "Iron Brigade (Meredith)"; state.gbEnemy = "Archer's Brigade"; }
+    else if (point === 2) { state.gbRegiment = "24th Michigan"; state.gbBrigade = "Iron Brigade remnant"; state.gbEnemy = "Pettigrew / Pender"; }
+    else if (point === 3) { state.gbRegiment = "154th New York"; state.gbBrigade = "Coster's Brigade"; state.gbEnemy = "Early / Rodes pursuit"; }
+    var meta = GB_POINT_META[point] || { day: 1, title: "Gettysburg", obj: "" };
+    state.gbPointObj = objOverride || meta.obj;
+    var el = document.getElementById("gbPoint");
+    if (!el) return;
+    var day = el.querySelector(".day");
+    var title = el.querySelector(".title");
+    var obj = el.querySelector(".obj");
+    if (day) day.textContent = "Day " + state.gbDay + " · Point " + point;
+    if (title) title.textContent = meta.title;
+    if (obj) obj.textContent = state.gbPointObj;
+    el.classList.add("show");
+  }
+
+  function hideGbPoint() {
+    var el = document.getElementById("gbPoint");
+    if (el) el.classList.remove("show");
+  }
+
+  function gbNearBrickyard(x, z) {
+    return Math.hypot(x - GB.brickX, z - GB.brickZ) <= GB.zoneBrickyardR;
+  }
+
   function openGbCourier() {
     state.gbCourierOpen = true;
     state.gbBranch = null;
@@ -2667,8 +3011,13 @@
   }
 
   function gbTryCommitFromPosition() {
-    if (state.scenario !== "gettysburg" || state.gbBranch || state.gbCourierOpen) return;
+    if (state.scenario !== "gettysburg" || state.gbCourierOpen) return;
     if (state.role !== "officer") return;
+    // Opening commit only before Point 1 starts
+    if (state.gbPoint > 0) {
+      gbTryPointPositionDecisions();
+      return;
+    }
     var zone = null;
     if (state.formLine) {
       var mx = (state.formLine.ax + state.formLine.bx) * 0.5;
@@ -2688,63 +3037,99 @@
       shout("Form on McPherson’s Ridge — we hold here!");
       state.gbHoldSite = "mcpherson";
       applyGbBranch("hold");
-      placeCompanyOnRidge();
-      showGbHud("COMMITTED by position: HOLD McPherson’s Ridge");
+      showGbHud("Point 1 — HOLD McPherson’s Ridge");
     } else if (zone === "seminary") {
-      shout("Form on Seminary Ridge — fallback line!");
+      shout("Form on Seminary Ridge — fighting withdrawal!");
       state.gbHoldSite = "seminary";
-      applyGbBranch("hold");
-      var spacing = 1.2, baseX = GB.seminaryX - 5, front = GB.seminaryZ + 2, ui = 0;
-      for (var i = 0; i < state.union.length; i++) {
-        var s = state.union[i];
-        if (s.isRemote) continue;
-        var col = ui % 10, rank = (ui / 10) | 0;
-        s.slotX = baseX + col * spacing;
-        s.slotZ = front - rank * 1.4;
-        s.x = s.slotX; s.z = s.slotZ; s.y = sampleHeight(s.x, s.z);
-        s.faceYaw = yawFromDir(-0.5, -0.15);
-        if (s.mesh) {
-          s.mesh.position.set(s.x, s.y, s.z);
-          s.mesh.rotation.y = s.faceYaw;
-          poseSoldierRifle(s.mesh, "ready", "union");
-        }
-        if (s.isPlayer) {
-          state.yaw = Math.atan2(0.55, -0.25);
-          camera.position.set(s.x, s.y + playerEyeHeight(), s.z);
-        }
-        ui++;
-      }
-      // CSA from west toward seminary
-      for (var j = 0; j < state.csa.length; j++) {
-        var csa = state.csa[j];
-        csa.slotX = GB.seminaryX - 40 + (j % 8) * 1.2;
-        csa.slotZ = GB.seminaryZ - 8 + ((j / 8) | 0) * 1.4;
-        csa.x = csa.slotX; csa.z = csa.slotZ; csa.y = sampleHeight(csa.x, csa.z);
-        if (csa.mesh) csa.mesh.position.set(csa.x, csa.y, csa.z);
-      }
-      showGbHud("COMMITTED by position: HOLD Seminary Ridge (fallback line)");
+      beginGbPoint2({ fromSeminary: true });
+      showGbHud("Point 2 — Seminary fighting withdrawal");
     } else if (zone === "cemetery") {
       shout("To Cemetery Hill — fall back through the town!");
       state.gbHoldSite = "cemetery";
-      applyGbBranch("fallback");
-      showGbHud("COMMITTED by position: WITHDRAW to Cemetery Hill");
+      state.unionMorale = Math.max(20, state.unionMorale - 12);
+      beginGbPoint3({ early: true });
+      showGbHud("Point 3 — early retreat through town");
+    }
+  }
+
+  function gbTryPointPositionDecisions() {
+    if (state.role !== "officer" || state.won !== null) return;
+    var c = gbCompanyCentroid();
+    if (!c) return;
+    var formMid = null;
+    if (state.formLine) {
+      formMid = {
+        x: (state.formLine.ax + state.formLine.bx) * 0.5,
+        z: (state.formLine.az + state.formLine.bz) * 0.5
+      };
+    }
+    if (state.gbPoint === 1) {
+      // Lead to seminary mid-fight → Point 2
+      if ((formMid && gbZoneAt(formMid.x, formMid.z) === "seminary") || gbZoneAt(c.x, c.z) === "seminary") {
+        shout("Fall back on the seminary — fighting withdrawal!");
+        beginGbPoint2({ fromSeminary: true });
+        return;
+      }
+      // Lead into town corridor → Point 3 early
+      if (c.z < GB.zoneTownEntryZ && (state.player && state.player.z < GB.zoneTownEntryZ + 4)) {
+        shout("Into the town — keep the column closed!");
+        beginGbPoint3({ early: true });
+      }
+    } else if (state.gbPoint === 2) {
+      // Enter town → Point 3
+      if (c.z < GB.zoneTownEntryZ - 2) {
+        shout("Through the streets — for the hill!");
+        beginGbPoint3({});
+        return;
+      }
+    } else if (state.gbPoint === 3) {
+      // Brickyard rear-guard: form line near Kuhn's brickyard
+      if (formMid && gbNearBrickyard(formMid.x, formMid.z)) {
+        if (!state.gbRearGuard) {
+          state.gbRearGuard = true;
+          shout("Rear guard — hold the brickyard! Column keep south!");
+          showGbHud("BRICKYARD REAR GUARD — hold while the column slips south");
+          // Peel half the AI south; keep nearest to brickyard as guard
+          var guard = [];
+          for (var i = 0; i < state.union.length; i++) {
+            var s = state.union[i];
+            if (!s.alive || s.isRemote || s.routed) continue;
+            guard.push(s);
+          }
+          guard.sort(function (a, b) {
+            return Math.hypot(a.x - GB.brickX, a.z - GB.brickZ) - Math.hypot(b.x - GB.brickX, b.z - GB.brickZ);
+          });
+          var keep = Math.max(4, Math.min(8, (guard.length / 2) | 0));
+          for (var g = 0; g < guard.length; g++) {
+            var u = guard[g];
+            if (g < keep) {
+              u._gbRear = true;
+              u.slotX = GB.brickX - 4 + (g % 5) * 1.2;
+              u.slotZ = GB.brickZ + 6 - ((g / 5) | 0) * 1.3;
+              u.faceYaw = yawFromDir(0.05, 1); // face north toward pursuit
+            } else {
+              u._gbRear = false;
+              u.slotZ = Math.min(u.slotZ, GB.brickZ - 10);
+            }
+          }
+        }
+      }
     }
   }
 
   function applyGbBranch(branch, fromNet) {
     if (state.scenario !== "gettysburg") return;
     if (branch !== "hold" && branch !== "fallback") return;
-    if (state.gbBranch === branch && !state.gbCourierOpen) return;
+    if (state.gbBranch === branch && !state.gbCourierOpen && state.gbPoint > 0) return;
     state.gbBranch = branch;
     closeGbCourier();
-    // Sync to peers when the officer issues the order on the field
     if (!fromNet && state.netMode && typeof netSend === "function") {
       netSend({ t: "gb_choice", branch: branch });
     }
     if (branch === "hold") {
-      beginGbHold();
+      beginGbPoint1();
     } else {
-      beginGbFallback();
+      beginGbPoint3({ early: true });
     }
     if (renderer.domElement && renderer.domElement.requestPointerLock) {
       try { renderer.domElement.requestPointerLock(); } catch (e) {}
@@ -2767,14 +3152,16 @@
       var z = rank === 0 ? front : rear;
       s.slotX = x; s.slotZ = z;
       s.x = x; s.z = z; s.y = sampleHeight(x, z);
-      s.faceYaw = yawFromDir(0.15, -1); // face west-north threat
+      s.faceYaw = yawFromDir(0.15, -1);
+      s._gbRear = false;
+      s._gbCutOff = false;
       if (s.mesh) {
         s.mesh.position.set(x, s.y, z);
         s.mesh.rotation.y = s.faceYaw;
         poseSoldierRifle(s.mesh, "ready", "union");
       }
       if (s.isPlayer) {
-        state.yaw = Math.atan2(-0.35, -1); // look toward approaching columns
+        state.yaw = Math.atan2(-0.35, -1);
         state.pitch = -0.05;
         camera.position.set(x, s.y + playerEyeHeight(), z);
       }
@@ -2786,7 +3173,8 @@
     shout("Hold the ridge! Make ready!");
   }
 
-  function beginGbHold() {
+  function beginGbPoint1() {
+    state.gbBranch = "hold";
     state.gbTimer = 0;
     state.gbWave = 0;
     state.gbWaveCd = 8;
@@ -2794,8 +3182,9 @@
     state.advancing = false;
     state.fallback = false;
     state.formPhase = "halt";
+    state.gbRearGuard = false;
+    setGbPoint(1);
     placeCompanyOnRidge();
-    // First CSA wave already on map to the west/north — push them toward ridge
     for (var i = 0; i < state.csa.length; i++) {
       var c = state.csa[i];
       var ang = -0.4 + Math.random() * 0.8;
@@ -2805,21 +3194,93 @@
       c.faceYaw = defaultFaceYaw("csa");
       if (c.mesh) { c.mesh.position.set(c.x, c.y, c.z); c.mesh.rotation.y = c.faceYaw; }
     }
-    showGbHud("HOLD THE RIDGE — delay until relief (" + Math.round(state.gbHoldLimit / 60) + " min / " + state.gbWaveMax + " waves)");
+    showGbHud("DAY 1 · POINT 1 — Hold McPherson’s until ordered east, or the line breaks");
   }
 
-  function beginGbFallback() {
+  // legacy alias
+  function beginGbHold() { beginGbPoint1(); }
+
+  function beginGbPoint2(opts) {
+    opts = opts || {};
+    closeGbCourier();
+    state.gbBranch = "hold";
+    state.gbTimer = 0;
+    state.gbBoundPhase = "fire";
+    state.gbBoundTimer = 0;
+    state.gbBoundsFired = 0;
+    state.fallback = true;
+    state.advancing = false;
+    state.charging = false;
+    state.formPhase = "halt";
+    state.companyOrder = "fallback";
+    setGbPoint(2, "Fire on the bound — then peel toward town");
+    var baseX = opts.fromSeminary ? GB.seminaryX - 4 : GB.ridgeX + 8;
+    var startZ = opts.fromSeminary ? GB.seminaryZ + 2 : GB.ridgeZ - 2;
+    var spacing = 1.15;
+    var ui = 0;
+    for (var i = 0; i < state.union.length; i++) {
+      var s = state.union[i];
+      if (s.isRemote) continue;
+      if (!s.alive) continue;
+      var col = ui % 10;
+      var rank = (ui / 10) | 0;
+      s.slotX = baseX + (col - 4.5) * spacing;
+      s.slotZ = startZ - rank * 1.4;
+      s.x = s.slotX; s.z = s.slotZ; s.y = sampleHeight(s.x, s.z);
+      s.faceYaw = yawFromDir(-0.85, -0.2); // face mostly west toward pursuit
+      s._gbRear = false;
+      s._gbCutOff = false;
+      if (s.mesh) {
+        s.mesh.position.set(s.x, s.y, s.z);
+        s.mesh.rotation.y = s.faceYaw;
+        poseSoldierRifle(s.mesh, "ready", "union");
+      }
+      if (s.isPlayer) {
+        state.yaw = Math.atan2(-0.9, -0.25);
+        state.pitch = -0.06;
+        camera.position.set(s.x, s.y + playerEyeHeight(), s.z);
+      }
+      ui++;
+    }
+    // CSA pressing from west of seminary
+    for (var j = 0; j < state.csa.length; j++) {
+      var c = state.csa[j];
+      if (!c.alive) continue;
+      c.slotX = GB.seminaryX - 32 + (j % 8) * 1.25;
+      c.slotZ = GB.seminaryZ - 4 + ((j / 8) | 0) * 1.4;
+      c.x = c.slotX; c.z = c.slotZ; c.y = sampleHeight(c.x, c.z);
+      if (c.mesh) c.mesh.position.set(c.x, c.y, c.z);
+    }
+    state.orderText = "Fighting withdrawal — fire by bounds!";
+    shout("By bounds! Each man fire — then fall back!");
+    showGbHud("DAY 1 · POINT 2 — Fighting withdrawal by bounds toward town");
+    if (renderer.domElement && renderer.domElement.requestPointerLock) {
+      try { renderer.domElement.requestPointerLock(); } catch (e) {}
+    }
+  }
+
+  function beginGbPoint3(opts) {
+    opts = opts || {};
+    closeGbCourier();
+    state.gbBranch = "fallback";
     state.gbTimer = 0;
     state.gbReachedHill = 0;
+    state.gbRearGuard = false;
+    state.gbBrickyardHold = 0;
+    state.gbBrickyardDone = false;
+    state.gbCutOffCount = 0;
+    state.gbFlankWaveCd = 18;
     state.fallback = true;
     state.advancing = false;
     state.charging = false;
     state.formPhase = "march";
     state.companyOrder = "fallback";
-    // Start on Carlisle Road north of the dense blocks, facing Cemetery Hill (-Z)
+    setGbPoint(3, opts.early
+      ? "Early withdraw — keep closed up; brickyard optional rear guard"
+      : "Rear-guard the brickyard or keep one body — crown Cemetery Hill");
     var spacing = 1.15;
     var baseX = 6;
-    var startZ = 12; // road approach — still continuous with town → hill
+    var startZ = opts.early ? 6 : GB.zoneTownEntryZ + 4;
     var ui = 0;
     for (var i = 0; i < state.union.length; i++) {
       var s = state.union[i];
@@ -2828,15 +3289,18 @@
       var rank = (ui / 10) | 0;
       s.slotX = baseX + (col - 4.5) * spacing;
       s.slotZ = startZ - rank * 1.5;
-      s.x = s.slotX; s.z = s.slotZ; s.y = sampleHeight(s.x, s.z);
-      s.faceYaw = yawFromDir(0.05, -1); // toward hill (-Z)
-      if (s.mesh) {
+      if (s.alive) {
+        s.x = s.slotX; s.z = s.slotZ; s.y = sampleHeight(s.x, s.z);
+      }
+      s.faceYaw = yawFromDir(0.05, -1);
+      s._gbRear = false;
+      s._gbCutOff = false;
+      if (s.mesh && s.alive) {
         s.mesh.position.set(s.x, s.y, s.z);
         s.mesh.rotation.y = s.faceYaw;
         poseSoldierRifle(s.mesh, "shoulder", "union");
       }
-      if (s.isPlayer) {
-        // yaw 0 looks world -Z toward Cemetery Hill
+      if (s.isPlayer && s.alive) {
         state.yaw = 0.02;
         state.pitch = -0.08;
         camera.position.set(s.x, s.y + playerEyeHeight(), s.z);
@@ -2846,18 +3310,32 @@
       }
       ui++;
     }
-    // CSA pursues from north/west into town
+    // Pursuit from north into town + seed flankers east/west
     for (var j = 0; j < state.csa.length; j++) {
       var c = state.csa[j];
-      c.slotX = -10 + (j % 10) * 1.3;
-      c.slotZ = 30 + ((j / 10) | 0) * 1.6;
+      if (!c.alive) continue;
+      if (j % 5 === 0) {
+        c.slotX = 18 + (j % 3) * 1.3;
+        c.slotZ = -10 - ((j / 5) | 0) * 1.4;
+      } else if (j % 5 === 1) {
+        c.slotX = -16 - (j % 3) * 1.3;
+        c.slotZ = -8 - ((j / 5) | 0) * 1.4;
+      } else {
+        c.slotX = -8 + (j % 10) * 1.3;
+        c.slotZ = 22 + ((j / 10) | 0) * 1.5;
+      }
       c.x = c.slotX; c.z = c.slotZ; c.y = sampleHeight(c.x, c.z);
-      if (c.mesh) { c.mesh.position.set(c.x, c.y, c.z); }
+      if (c.mesh) c.mesh.position.set(c.x, c.y, c.z);
     }
     state.orderText = "Fall back through town — for Cemetery Hill!";
     shout("Fall back! Through the town — to the hill!");
-    showGbHud("FALL BACK — fighting withdrawal to Cemetery Hill (get ≥60% of the company onto the crest)");
+    showGbHud("DAY 1 · POINT 3 — Fighting retreat through town · form at brickyard for rear guard");
+    if (renderer.domElement && renderer.domElement.requestPointerLock) {
+      try { renderer.domElement.requestPointerLock(); } catch (e) {}
+    }
   }
+
+  function beginGbFallback() { beginGbPoint3({ early: true }); }
 
   function spawnGbWave() {
     state.gbWave += 1;
@@ -2881,31 +3359,80 @@
     }
     state.orderText = "Wave " + state.gbWave + " on the pike — hold them!";
     shout("Here they come! Hold the line!");
-    showGbHud("HOLD — wave " + state.gbWave + "/" + state.gbWaveMax + " · relief in " + Math.max(0, Math.ceil((state.gbHoldLimit - state.gbTimer) / 60)) + " min");
+    showGbHud("POINT 1 — wave " + state.gbWave + "/" + state.gbWaveMax + " · " + Math.max(0, Math.ceil((state.gbHoldLimit - state.gbTimer))) + "s");
+  }
+
+  function spawnGbFlankers() {
+    var n = 5;
+    for (var i = 0; i < n; i++) {
+      var east = i % 2 === 0;
+      var x = east ? (16 + Math.random() * 8) : (-18 - Math.random() * 8);
+      var z = -12 - Math.random() * 24;
+      var s = new Soldier(x, z, "csa", false);
+      if (s.mesh) scene.remove(s.mesh);
+      s.mesh = makeSoldierMesh("csa", {});
+      s.faceYaw = yawFromDir(east ? -1 : 1, 0.2);
+      s.y = sampleHeight(x, z);
+      s.mesh.position.set(x, s.y, z);
+      s.mesh.rotation.y = s.faceYaw;
+      scene.add(s.mesh);
+      s.slotX = 6 + (Math.random() - 0.5) * 6;
+      s.slotZ = z - 4;
+      poseSoldierRifle(s.mesh, "shoulder", "csa");
+      state.csa.push(s);
+    }
+    shout("Flankers in the alleys!");
+  }
+
+  function updateGbCutOffs(dt) {
+    var c = gbCompanyCentroid();
+    if (!c) return;
+    var cut = 0;
+    for (var i = 0; i < state.union.length; i++) {
+      var s = state.union[i];
+      if (!s.alive || s.routed || s.isRemote || s.isPlayer) continue;
+      if (s._gbRear) continue;
+      var d = Math.hypot(s.x - c.x, s.z - c.z);
+      // Side-street cut-off: far from column AND east/west of main street corridor
+      var offStreet = Math.abs(s.x - 6) > 12;
+      if (d > 22 && offStreet && s.z > GB.hillZ + 25) {
+        if (!s._gbCutOff) {
+          s._gbCutOff = true;
+          s.routed = Math.random() < 0.35;
+          if (s.routed) {
+            s.slotX = s.x + (s.x > 6 ? 8 : -8);
+            s.slotZ = s.z + 4;
+          }
+        }
+        cut++;
+      } else if (s._gbCutOff && d < 12) {
+        s._gbCutOff = false;
+      }
+    }
+    state.gbCutOffCount = cut;
   }
 
   function updateGettysburg(dt) {
     if (state.scenario !== "gettysburg" || state.won !== null) return;
     if (state.gbCourierOpen) return;
-    if (!state.gbBranch) {
+    if (!state.gbPoint) {
       state._gbCommitAcc = (state._gbCommitAcc || 0) + dt;
       if (state._gbCommitAcc >= 0.5) { state._gbCommitAcc = 0; gbTryCommitFromPosition(); }
       return;
     }
     state.gbTimer += dt;
+    state._gbDecAcc = (state._gbDecAcc || 0) + dt;
+    if (state._gbDecAcc >= 0.6) { state._gbDecAcc = 0; gbTryPointPositionDecisions(); }
 
-    if (state.gbBranch === "hold") {
+    if (state.gbPoint === 1) {
       state.gbWaveCd -= dt;
       if (state.gbWave < state.gbWaveMax && state.gbWaveCd <= 0) {
         spawnGbWave();
-        state.gbWaveCd = 55 + state.gbWave * 8;
+        state.gbWaveCd = 50 + state.gbWave * 8;
       }
-      // Drive CSA slots toward ridge
       for (var i = 0; i < state.csa.length; i++) {
         var c = state.csa[i];
         if (!c.alive || c.routed) continue;
-        if (!c._gbPush) c._gbPush = true;
-        // slowly bias slot toward ridge line
         c.slotX += ((GB.ridgeX + (i % 7) * 1.5) - c.slotX) * Math.min(1, dt * 0.15);
         c.slotZ += ((GB.ridgeZ - 6) - c.slotZ) * Math.min(1, dt * 0.12);
       }
@@ -2914,49 +3441,146 @@
       state._gbHudAcc += dt;
       if (state._gbHudAcc >= 1) {
         state._gbHudAcc = 0;
-        showGbHud("HOLD THE RIDGE — wave " + state.gbWave + "/" + state.gbWaveMax + " · " + Math.ceil(remain) + "s until relief");
+        showGbHud("DAY 1 · POINT 1 — wave " + state.gbWave + "/" + state.gbWaveMax + " · " + Math.ceil(remain) + "s · lead east to withdraw by bounds");
       }
       if (state.gbTimer >= state.gbHoldLimit || (state.gbWave >= state.gbWaveMax && aliveCount(state.csa) <= 4)) {
         state.gbRelief = true;
-        endGame(true, "Relief reaches the ridge. Your delaying action bought the army the high ground south of town.");
+        shout("Relief on the right — fall back fighting!");
+        beginGbPoint2({ fromSeminary: false });
       } else if (aliveCount(state.union) <= 3) {
         endGame(false, "The ridge is overrun. The company cannot delay the columns any longer.");
       }
     }
 
-    if (state.gbBranch === "fallback") {
-      // March slots south toward Cemetery Hill along corridor
+    if (state.gbPoint === 2) {
+      // Fighting withdrawal by bounds: fire → fall → fire …
+      state.gbBoundTimer += dt;
+      var boundTargetZ = GB.zoneTownEntryZ + 6;
+      if (state.gbBoundPhase === "fire") {
+        state.fallback = false;
+        state.formPhase = "fire";
+        state.companyOrder = "fire";
+        for (var u = 0; u < state.union.length; u++) {
+          var s = state.union[u];
+          if (!s.alive || s.isRemote || s.routed) continue;
+          s.faceYaw = yawFromDir(-0.9, -0.15);
+          // Hold slot while volleying
+        }
+        if (state.gbBoundTimer >= 4.5) {
+          state.gbBoundPhase = "fall";
+          state.gbBoundTimer = 0;
+          state.gbBoundsFired += 1;
+          state.fallback = true;
+          state.formPhase = "march";
+          state.companyOrder = "fallback";
+          shout("Fall back by the bound!");
+        }
+      } else {
+        state.fallback = true;
+        for (var u2 = 0; u2 < state.union.length; u2++) {
+          var s2 = state.union[u2];
+          if (!s2.alive || s2.isRemote || s2.routed) continue;
+          s2.slotZ += (boundTargetZ - s2.slotZ) * Math.min(1, dt * 0.16);
+          s2.slotX += ((GB.seminaryX + 8 + (u2 % 8 - 3.5) * 1.15) - s2.slotX) * Math.min(1, dt * 0.12);
+          s2.faceYaw = yawFromDir(-0.5, -0.7);
+        }
+        if (state.gbBoundTimer >= 5.5) {
+          state.gbBoundPhase = "fire";
+          state.gbBoundTimer = 0;
+          shout("Halt — ready! Fire!");
+        }
+      }
+      // CSA press from west / NW
+      for (var ci = 0; ci < state.csa.length; ci++) {
+        var csa = state.csa[ci];
+        if (!csa.alive) continue;
+        csa.slotX += ((GB.seminaryX - 8 + (ci % 6)) - csa.slotX) * Math.min(1, dt * 0.1);
+        csa.slotZ += ((GB.seminaryZ - 2 - (ci % 3)) - csa.slotZ) * Math.min(1, dt * 0.09);
+      }
+      var cent = gbCompanyCentroid();
+      if (!state._gbHudAcc) state._gbHudAcc = 0;
+      state._gbHudAcc += dt;
+      if (state._gbHudAcc >= 1) {
+        state._gbHudAcc = 0;
+        showGbHud("DAY 1 · POINT 2 — bounds " + state.gbBoundsFired + " · " + (state.gbBoundPhase === "fire" ? "FIRING (independent)" : "FALLING BACK") + " · peel into town");
+      }
+      if (cent && cent.z < GB.zoneTownEntryZ) {
+        beginGbPoint3({});
+      } else if (aliveCount(state.union) <= 3) {
+        endGame(false, "The fighting withdrawal breaks on the seminary slope.");
+      } else if (state.gbTimer > 480 && (!cent || cent.z > GB.zoneTownEntryZ)) {
+        // Forced into town disordered
+        state.unionMorale = Math.max(15, state.unionMorale - 15);
+        beginGbPoint3({});
+      }
+    }
+
+    if (state.gbPoint === 3) {
       var targetZ = GB.hillZ + 4;
       var targetX = GB.hillX;
       var onHill = 0;
       var total = 0;
-      for (var u = 0; u < state.union.length; u++) {
-        var s = state.union[u];
-        if (s.isRemote) continue;
-        if (!s.alive || s.routed) continue;
+      for (var u3 = 0; u3 < state.union.length; u3++) {
+        var s3 = state.union[u3];
+        if (s3.isRemote) continue;
+        if (!s3.alive || s3.routed) continue;
         total++;
-        // Pull formation toward hill
-        s.slotZ += (targetZ - s.slotZ) * Math.min(1, dt * 0.18);
-        s.slotX += ((targetX + (u % 8 - 3.5) * 1.15) - s.slotX) * Math.min(1, dt * 0.14);
-        var distH = Math.hypot(s.x - GB.hillX, s.z - GB.hillZ);
-        if (distH < 18 && s.y > gbHeight(GB.hillX, GB.hillZ) - 1.5) onHill++;
+        if (s3._gbRear && state.gbRearGuard && !state.gbBrickyardDone) {
+          // Rear guard holds near brickyard facing north
+          s3.slotX += ((GB.brickX - 4 + (u3 % 5) * 1.2) - s3.slotX) * Math.min(1, dt * 0.2);
+          s3.slotZ += ((GB.brickZ + 6) - s3.slotZ) * Math.min(1, dt * 0.2);
+          s3.faceYaw = yawFromDir(0.05, 1);
+        } else if (!s3._gbCutOff) {
+          s3.slotZ += (targetZ - s3.slotZ) * Math.min(1, dt * 0.18);
+          s3.slotX += ((targetX + (u3 % 8 - 3.5) * 1.15) - s3.slotX) * Math.min(1, dt * 0.14);
+        }
+        var distH = Math.hypot(s3.x - GB.hillX, s3.z - GB.hillZ);
+        if (distH < 18 && s3.y > gbHeight(GB.hillX, GB.hillZ) - 1.5) onHill++;
       }
-      // Pursuit
-      for (var ci = 0; ci < state.csa.length; ci++) {
-        var csa = state.csa[ci];
-        if (!csa.alive) continue;
-        csa.slotZ += (-40 - csa.slotZ) * Math.min(1, dt * 0.1);
-        csa.slotX += ((8 + (ci % 5)) - csa.slotX) * Math.min(1, dt * 0.08);
+      // Pursuit + flank pressure
+      for (var cj = 0; cj < state.csa.length; cj++) {
+        var c3 = state.csa[cj];
+        if (!c3.alive) continue;
+        if (state.gbRearGuard && !state.gbBrickyardDone && cj % 2 === 0) {
+          c3.slotX += ((GB.brickX + (cj % 4)) - c3.slotX) * Math.min(1, dt * 0.11);
+          c3.slotZ += ((GB.brickZ + 14) - c3.slotZ) * Math.min(1, dt * 0.1);
+        } else {
+          c3.slotZ += (-50 - c3.slotZ) * Math.min(1, dt * 0.1);
+          c3.slotX += ((8 + (cj % 5) - 2) - c3.slotX) * Math.min(1, dt * 0.08);
+        }
       }
+      if (state.gbRearGuard && !state.gbBrickyardDone) {
+        state.gbBrickyardHold += dt;
+        if (state.gbBrickyardHold >= 90) {
+          state.gbBrickyardDone = true;
+          state.unionMorale = Math.min(100, state.unionMorale + 10);
+          shout("Brickyard’s bought the column time — rear guard fall back!");
+          for (var rg = 0; rg < state.union.length; rg++) {
+            if (state.union[rg]._gbRear) state.union[rg]._gbRear = false;
+          }
+          state.gbRearGuard = false;
+        }
+      }
+      state.gbFlankWaveCd -= dt;
+      if (state.gbFlankWaveCd <= 0) {
+        spawnGbFlankers();
+        state.gbFlankWaveCd = 55;
+      }
+      updateGbCutOffs(dt);
       state.gbReachedHill = total ? onHill / total : 0;
-      showGbHud("FALL BACK — " + Math.round(state.gbReachedHill * 100) + "% on Cemetery Hill · keep moving through town");
+      if (!state._gbHudAcc) state._gbHudAcc = 0;
+      state._gbHudAcc += dt;
+      if (state._gbHudAcc >= 1) {
+        state._gbHudAcc = 0;
+        var brickTxt = state.gbBrickyardDone ? "brickyard cleared" : (state.gbRearGuard ? ("brickyard " + Math.floor(state.gbBrickyardHold) + "s") : "form at brickyard for rear guard");
+        showGbHud("DAY 1 · POINT 3 — " + Math.round(state.gbReachedHill * 100) + "% on Cemetery · cut-off " + state.gbCutOffCount + " · " + brickTxt);
+      }
       if (state.gbReachedHill >= 0.6 && onHill >= 6) {
-        // Form on the hill — visible consequence
         state.fallback = false;
         state.formPhase = "halt";
         state.orderText = "On the hill — dress the line!";
         shout("On the hill! Dress the line!");
-        endGame(true, "Enough of the company crowns Cemetery Hill and forms. The town is left behind; the high ground is yours.");
+        endGame(true, "Day 1 complete. Enough of the company crowns Cemetery Hill and forms after the fighting retreat through town.");
       } else if (aliveCount(state.union) <= 3) {
         endGame(false, "Pursuit cuts the company apart in the streets. Too few reach Cemetery Hill.");
       } else if (state.gbTimer > 720 && state.gbReachedHill < 0.6) {
@@ -2969,12 +3593,23 @@
     audio.resume();
     state.scenario = "gettysburg";
     state.gbBranch = null;
+    state.gbPoint = 0;
+    state.gbDay = 1;
     state.gbTimer = 0;
     state.gbWave = 0;
     state.gbCourierOpen = false;
+    state.gbBoundPhase = "fall";
+    state.gbBoundTimer = 0;
+    state.gbBoundsFired = 0;
+    state.gbRearGuard = false;
+    state.gbBrickyardHold = 0;
+    state.gbBrickyardDone = false;
+    state.gbCutOffCount = 0;
+    state.gbFlankWaveCd = 0;
     state.netMode = false;
     state.netHost = false;
     state.role = "officer";
+    hideGbPoint();
     // Spawn into the continuous field FIRST — courier order happens on the battlefield
     spawnBattle();
     buildGettysburgField();
@@ -3018,7 +3653,7 @@
     crosshair.classList.remove("hidden");
     companyHud.style.display = "block";
     document.getElementById("hint").innerHTML =
-      "Gettysburg Day One · form on McPherson’s / Seminary / Cemetery Hill (F line) · 1–8";
+      "Gettysburg Day 1 · Points 1–3 · form on McPherson’s / Seminary / Cemetery (F line) · 1–8";
     updateHudRole();
     // Brief beat on the field, then courier prompt (in-world decision — not a lobby menu)
     showGbHud("Morning, July 1 — a courier gallops toward the company…");
@@ -3032,6 +3667,7 @@
     if (state.scenario !== "gettysburg") {
       clearGbProps();
       hideGbHud();
+      hideGbPoint();
       closeGbCourier();
     }
     state.union.forEach(function (s) {
@@ -3092,7 +3728,7 @@
     state.charging = false;
     state.orderText = "Forward — march!";
 
-    state.fireAtWill = false;
+    state.weaponsFree = true;
     state.advancing = false;
     state.fallback = false;
     state.readySet = false;
@@ -3116,7 +3752,7 @@
       // Rebuild mesh with roles for non-player
       if (!isPlayer) {
         if (s.mesh) scene.remove(s.mesh);
-        var opts = { colorBearer: i === 0, officer: false };
+        var opts = { colorBearer: false, officer: false };
         s.mesh = makeSoldierMesh("union", opts);
         s.faceYaw = defaultFaceYaw("union");
         s.mesh.position.set(x, sampleHeight(x, front), front);
@@ -3143,7 +3779,7 @@
       x = baseX + i * spacing;
       var c1 = new Soldier(x, -front, "csa", false);
       if (c1.mesh) scene.remove(c1.mesh);
-      c1.mesh = makeSoldierMesh("csa", { colorBearer: i === 0 });
+      c1.mesh = makeSoldierMesh("csa", {});
       c1.faceYaw = defaultFaceYaw("csa");
       c1.mesh.position.set(x, sampleHeight(x, -front), -front);
       c1.mesh.rotation.y = c1.faceYaw;
@@ -3162,6 +3798,35 @@
       poseSoldierRifle(c2.mesh, "shoulder", "csa");
       state.csa.push(c2);
     }
+
+    // Field music + colors — just behind each line (do not fire)
+    function spawnSpecialty(side, arr, behindZ, faceSign) {
+      var roles = [
+        { colorBearer: true, x: 0 },
+        { drummer: true, x: -1.6 },
+        { fifer: true, x: 1.6 }
+      ];
+      for (var ri = 0; ri < roles.length; ri++) {
+        var ro = roles[ri];
+        var sx = ro.x;
+        var sz = behindZ;
+        var sp = new Soldier(sx, sz, side, false, ro);
+        if (sp.mesh) scene.remove(sp.mesh);
+        sp.mesh = makeSoldierMesh(side, ro);
+        sp.faceYaw = defaultFaceYaw(side);
+        sp.y = sampleHeight(sx, sz);
+        sp.slotX = sx; sp.slotZ = sz;
+        sp.x = sx; sp.z = sz;
+        if (sp.mesh) {
+          sp.mesh.position.set(sx, sp.y, sz);
+          sp.mesh.rotation.y = sp.faceYaw;
+          scene.add(sp.mesh);
+        }
+        arr.push(sp);
+      }
+    }
+    spawnSpecialty("union", state.union, state.lineHalfGap + 3.2, 1);
+    spawnSpecialty("csa", state.csa, -(state.lineHalfGap + 3.2), -1);
 
     var p = state.player;
     // Stand just behind the front rank (further +Z) so you see your men's backs
@@ -3219,11 +3884,11 @@
     if (e.code === "Escape") document.exitPointerLock();
     if (!state.running || state.role !== "officer") return;
     if (e.code === "Digit1" || e.code === "Numpad1") issueCompanyOrder("ready");
-    if (e.code === "Digit2" || e.code === "Numpad2") issueCompanyOrder("aim");
-    if (e.code === "Digit3" || e.code === "Numpad3") issueCompanyOrder("fire");
+    if (e.code === "Digit2" || e.code === "Numpad2") issueCompanyOrder("commenceFire");
+    if (e.code === "Digit3" || e.code === "Numpad3") issueCompanyOrder("ceaseFire");
     if (e.code === "Digit4" || e.code === "Numpad4") issueCompanyOrder("load");
-    if (e.code === "Digit5" || e.code === "Numpad5") issueCompanyOrder("fireAtWill");
-    if (e.code === "Digit6" || e.code === "Numpad6") issueCompanyOrder("advanceToggle");
+    if (e.code === "Digit5" || e.code === "Numpad5") issueCompanyOrder("advanceToggle");
+    if (e.code === "Digit6" || e.code === "Numpad6") issueCompanyOrder("halt");
     if (e.code === "Digit7" || e.code === "Numpad7") issueCompanyOrder("charge");
     if (e.code === "Digit8" || e.code === "Numpad8") issueCompanyOrder("fallback");
     if (e.code === "KeyF") {
@@ -3286,7 +3951,7 @@
     if (role === "officer") {
       companyHud.style.display = "block";
       document.getElementById("hint").innerHTML =
-        "1–8 orders (≤60 yd) · G rejoin · Shift sprint · C crouch · Z prone · Space jump · Hold F/MMB draw line · LMB revolver";
+        "1 ready · 2 commence fire · 3 cease · 4 load · 5 adv · 6 halt · 7 charge · 8 fall back · F line · LMB fire";
     } else {
       companyHud.style.display = "none";
       document.getElementById("hint").textContent =
@@ -3294,12 +3959,9 @@
     }
     renderer.domElement.requestPointerLock();
   }
-  if (startPrivateBtn) startPrivateBtn.addEventListener("click", function () {
-    state.scenario = null; state.gbBranch = null; hideGbHud(); closeGbCourier(); clearGbProps();
-    state.netMode = false; state.netHost = false; beginGame("private");
-  });
   if (startOfficerBtn) startOfficerBtn.addEventListener("click", function () {
-    state.scenario = null; state.gbBranch = null; hideGbHud(); closeGbCourier(); clearGbProps();
+    state.scenario = null; state.gbBranch = null; state.gbPoint = 0;
+    hideGbHud(); hideGbPoint(); closeGbCourier(); clearGbProps();
     state.netMode = false; state.netHost = false; beginGame("officer");
   });
   var hostOfficerBtn = document.getElementById("hostOfficer");
@@ -3312,7 +3974,7 @@
   var gbBriefOk = document.getElementById("gbBriefingOk");
   if (gbBriefOk) gbBriefOk.addEventListener("click", function () {
     closeGbCourier();
-    showGbHud("Lead/form on McPherson’s, Seminary Ridge, or Cemetery Hill to commit");
+    showGbHud("Lead/form on McPherson’s (Pt1), Seminary (Pt2), or Cemetery/town (Pt3) to commit");
     if (renderer.domElement && renderer.domElement.requestPointerLock) {
       try { renderer.domElement.requestPointerLock(); } catch (e) {}
     }
@@ -3388,44 +4050,29 @@
     }
     if (shoutWarn) shoutWarn.classList.remove("show");
     state.companyOrder = order;
-    // net cmd is sent from shout() with the spoken text
     if (order === "ready") {
-      state.readySet = true;
-      state.aimedSet = false;
-      state.fireAtWill = false;
       state.formPhase = "halt";
       shout("MAKE READY!");
       state.union.forEach(function (s) {
         if (s.mesh && s.alive && !s.isPlayer) poseSoldierRifle(s.mesh, "ready", "union");
       });
-    } else if (order === "aim") {
-      state.aimedSet = true;
-      state.fireAtWill = false;
-      shout("TAKE AIM!");
-      state.union.forEach(function (s) {
-        if (s.mesh && s.alive && !s.isPlayer) poseSoldierRifle(s.mesh, "aim", "union");
-      });
-    } else if (order === "fire") {
-      shout("FIRE!");
-      officerVolley();
-      state.readySet = false;
-      state.aimedSet = false;
-      state.companyOrder = "load";
+    } else if (order === "commenceFire") {
+      state.weaponsFree = true;
+      shout("Commence firing!");
+      state.orderText = "Commence firing — every man for himself";
+    } else if (order === "ceaseFire") {
+      state.weaponsFree = false;
+      shout("Cease firing!");
+      state.orderText = "Cease firing — hold your fire";
     } else if (order === "load") {
-      state.fireAtWill = false;
       shout("Load! Load!");
       state.union.forEach(function (s) {
         if (!s.alive || s.isPlayer || s.routed) return;
-        if (!s.loaded) { s.reloading = true; s.reloadT = 0; s.reloadStep = 0; }
+        if (!s.loaded && !s.reloading) { s.reloading = true; s.reloadT = 0; s.reloadStep = 0; }
       });
       state.union.forEach(function (s) {
         if (s.mesh && s.alive && !s.isPlayer) poseSoldierRifle(s.mesh, "shoulder", "union");
       });
-    } else if (order === "fireAtWill") {
-      state.fireAtWill = true;
-      state.readySet = false;
-      state.aimedSet = false;
-      shout("Fire at will!");
     } else if (order === "advanceToggle") {
       if (state.fallback) state.fallback = false;
       state.advancing = !state.advancing;
@@ -3438,10 +4085,15 @@
         state.formPhase = "halt";
         shout("Company — halt!");
       }
+    } else if (order === "halt") {
+      state.advancing = false;
+      state.fallback = false;
+      state.charging = false;
+      state.formPhase = "halt";
+      shout("Company — halt!");
     } else if (order === "charge") {
       state.advancing = false;
       state.fallback = false;
-      state.fireAtWill = false;
       state.charging = true;
       state.formPhase = "charge";
       state.formTimer = 2.5;
@@ -3456,42 +4108,6 @@
       state.formPhase = "march";
       shout("Fall back! Steady!");
     }
-  }
-
-  function officerVolley() {
-    // Accuracy bonus if ready+aim sequence was followed
-    var bonus = (state.readySet && state.aimedSet) ? 1.0 : 0.45;
-    var arr = state.union;
-    for (var i = 0; i < arr.length; i++) {
-      var s = arr[i];
-      if (!s.alive || s.routed || s.fallen || s.isPlayer || s.isRemote) continue;
-      if (!s.loaded) continue;
-      (function (soldier, delay, acc) {
-        setTimeout(function () {
-          if (!state.running || !soldier.alive || soldier.routed) return;
-          // Temporarily tighten/loosen AI shot
-          var old = soldier._accMul;
-          soldier._accMul = acc;
-          soldier.loaded = true;
-          soldier.reloading = false;
-          aiShoot(soldier);
-          soldier._accMul = old;
-        }, delay);
-      })(s, Math.random() * 220, bonus);
-    }
-    audio.volley();
-  }
-
-  // ---- Combat ----
-  function lookDir() {
-    // yaw: 0 looks toward -Z (enemy). pitch up positive.
-    var cy = Math.cos(state.pitch);
-    var dir = new THREE.Vector3(
-      -Math.sin(state.yaw) * cy,
-      Math.sin(state.pitch),
-      -Math.cos(state.yaw) * cy
-    );
-    return dir.normalize();
   }
 
   function beginReload() {
@@ -3874,6 +4490,17 @@
     if (target.mesh) {
       target.mesh.userData.dying = true;
     }
+    if (target.isColorBearer && target.mesh && target.mesh.userData.flag) {
+      var fl = target.mesh.userData.flag;
+      target.mesh.remove(fl);
+      fl.position.set(target.x + 0.2, sampleHeight(target.x, target.z) + 0.05, target.z);
+      fl.rotation.set(1.2, 0, 0.3);
+      scene.add(fl);
+      if (!state._droppedFlag) state._droppedFlag = {};
+      state._droppedFlag[target.side] = fl;
+      target.mesh.userData.flag = null;
+      setTimeout(function () { tryTransferColors(target.side); }, 900);
+    }
     // Drop rifle beside the body (slight delay feel: drop immediately but near hand)
     if (target.mesh && target.mesh.userData.rifle) {
       var rif = target.mesh.userData.rifle;
@@ -3950,6 +4577,54 @@
     return best;
   }
 
+  function weaponSwayOffset(s, side) {
+    // Continuous smooth figure-eight / noise drift in yaw/pitch radians
+    var t = s.swayT || 0;
+    var amp = s._swayAmpNow != null ? s._swayAmpNow : (s.swayAmp || 0.014);
+    var sx = Math.sin(t * 1.15) * Math.cos(t * 0.37);
+    var sy = Math.sin(t * 0.83 + 1.2) * Math.cos(t * 0.51);
+    // slight second harmonic
+    sx += 0.35 * Math.sin(t * 2.3 + 0.4);
+    sy += 0.35 * Math.cos(t * 1.9 + 0.8);
+    return { yaw: sx * amp, pitch: sy * amp * 0.85, amp: amp, t: t };
+  }
+
+  function updateWeaponSway(s, dt, side) {
+    if (!s || !s.alive) return;
+    s.swayT = (s.swayT || 0) + dt;
+    if (s._postSprint > 0) s._postSprint = Math.max(0, s._postSprint - dt);
+    var staminaFrac = 1;
+    if (s.isPlayer) staminaFrac = Math.max(0, (state.stamina || 0) / Math.max(1, state.maxStamina || 100));
+    var morale = (side === "csa" ? state.csaMorale : state.unionMorale) / 100;
+    var sup = (side === "csa" ? state.csaSuppression : state.unionSuppression) / 100;
+    var base = s.swayAmp || 0.014;
+    var mul = 1;
+    mul += (1 - staminaFrac) * 0.9;
+    mul += (s._postSprint || 0) > 0 ? 0.55 : 0;
+    mul += Math.min(1.2, (s.bleeding || 0) * 0.8);
+    mul += (s.aimPenalty || 0) * 1.4;
+    mul += (s.limp || 0) * 0.5;
+    mul += (1 - morale) * 0.55;
+    mul += sup * 0.7;
+    if (s.isPlayer) {
+      if (state.prone) mul *= 0.38;
+      else if (state.crouching) mul *= 0.58;
+      if (state.aiming) mul *= Math.max(0.35, 1 - state.settle * 0.65);
+      // still: no WASD / no touch move
+      var moving = !!(state.keys["KeyW"] || state.keys["KeyA"] || state.keys["KeyS"] || state.keys["KeyD"] ||
+        (state.touchMove && (Math.abs(state.touchMove.x) + Math.abs(state.touchMove.y) > 0.08)));
+      if (!moving) mul *= 0.72;
+      if (state.keys["ShiftLeft"] || state.keys["ShiftRight"] || state.touchSprint) s._postSprint = 1.8;
+    } else {
+      // AI stance proxies: crawling / wounded shrink or grow
+      if (s.crawl || s.prone) mul *= 0.4;
+      if (s.veteran) mul *= 0.62;
+    }
+    if (s.veteran) mul *= 0.75;
+    s._swayAmpNow = base * mul;
+    s._sway = weaponSwayOffset(s, side);
+  }
+
   function aiShoot(s) {
     if (!s.alive || s.routed || s.fallen) return;
     var tgt = nearestEnemy(s);
@@ -3970,10 +4645,23 @@
     var dir = new THREE.Vector3(tgt.x - origin.x, (tgt.y + 1.05) - origin.y, tgt.z - origin.z);
     if (dir.lengthSq() < 0.01) return;
     dir.normalize();
+    // Continuous weapon sway (smooth drift) baked into shot direction
+    if (!s._sway) updateWeaponSway(s, 0.016, s.side);
+    var sw = s._sway || weaponSwayOffset(s, s.side);
+    // yaw around Y, pitch around right axis
+    var cy = Math.cos(sw.yaw), sy = Math.sin(sw.yaw);
+    var xzX = dir.x * cy + dir.z * sy;
+    var xzZ = -dir.x * sy + dir.z * cy;
+    dir.x = xzX; dir.z = xzZ;
+    var cp = Math.cos(sw.pitch), sp = Math.sin(sw.pitch);
+    var hy = dir.y * cp - dir.z * sp;
+    var hz = dir.y * sp + dir.z * cp;
+    dir.y = hy; dir.z = hz;
+    dir.normalize();
     var sup = (s.side === "union" ? state.unionSuppression : state.csaSuppression) / 100;
     var acc = (typeof s._accMul === "number") ? s._accMul : 1;
     var woundSpread = 1 + (s.aimPenalty || 0) * 2.2;
-    var spread = ((0.012 + Math.random() * 0.02 + sup * 0.025) / Math.max(0.35, acc)) * woundSpread;
+    var spread = ((0.01 + Math.random() * 0.016 + sup * 0.02) / Math.max(0.35, acc)) * woundSpread;
     dir.x += (Math.random() - 0.5) * spread * 2;
     dir.y += (Math.random() - 0.5) * spread * 1.2;
     dir.z += (Math.random() - 0.5) * spread * 2;
@@ -3987,25 +4675,110 @@
     audio.musketCrack(true);
   }
 
-  function volley(side) {
+  // Massed volleys removed — every soldier fires independently via updateSide.
+  function volley(side) { /* intentionally empty: independent fire only */ }
+
+  function updateSpecialtySoldier(s, dt, side) {
+    if (!s.alive) return;
+    // Keep slotted just behind company centroid
+    var c = null;
     var arr = side === "union" ? state.union : state.csa;
+    var sx = 0, sz = 0, n = 0;
     for (var i = 0; i < arr.length; i++) {
-      var s = arr[i];
-      if (!s.alive || s.routed || s.fallen || s.isPlayer) continue;
-      // Force ready for massed volley
-      s.loaded = true;
-      s.reloading = false;
-      (function (soldier, delay) {
-        setTimeout(function () {
-          if (state.running && soldier.alive && !soldier.routed && !soldier.fallen) {
-            soldier.loaded = true;
-            soldier.reloading = false;
-            aiShoot(soldier);
-          }
-        }, delay);
-      })(s, Math.random() * 220);
+      var o = arr[i];
+      if (!o.alive || o.routed || o.noncombatant || o.isPlayer) continue;
+      sx += o.x; sz += o.z; n++;
+    }
+    if (n) {
+      var behind = (side === "union") ? 3.0 : -3.0;
+      var ox = s.isColorBearer ? 0 : (s.isDrummer ? -1.6 : 1.6);
+      s.slotX = sx / n + ox;
+      s.slotZ = sz / n + behind;
+    }
+    s.x += (s.slotX - s.x) * Math.min(1, 4.5 * dt);
+    s.z += (s.slotZ - s.z) * Math.min(1, 4.5 * dt);
+    s.y = sampleHeight(s.x, s.z);
+    s.faceYaw = defaultFaceYaw(side);
+    s.syncMesh();
+    if (!s.mesh) return;
+    s.mesh.rotation.y = s.faceYaw;
+    var t = state.clock || 0;
+    // Playing animations — drummer & fifer ONLY (color bearer never plays music)
+    if (s.isDrummer && s.mesh.userData.stickR) {
+      var beat = Math.sin(t * 8.5);
+      s.mesh.userData.stickR.rotation.x = -0.4 + beat * 0.55;
+      s.mesh.userData.stickL.rotation.x = -0.3 - beat * 0.45;
+      if (s.mesh.userData.armR) s.mesh.userData.armR.rotation.x = -0.6 + beat * 0.35;
+      if (s.mesh.userData.armL) s.mesh.userData.armL.rotation.x = -0.5 - beat * 0.3;
+      s._musicAcc = (s._musicAcc || 0) + dt;
+      if (s._musicAcc > 0.28) { s._musicAcc = 0; audio.drumPulse(); }
+    } else if (s.isFifer && s.mesh.userData.fife) {
+      var bob = Math.sin(t * 5.2) * 0.04;
+      s.mesh.userData.fife.position.y = 1.42 + bob;
+      if (s.mesh.userData.armR) s.mesh.userData.armR.rotation.set(-1.1, 0.2, -0.3);
+      if (s.mesh.userData.armL) s.mesh.userData.armL.rotation.set(-1.05, -0.15, 0.35);
+      s._musicAcc = (s._musicAcc || 0) + dt;
+      if (s._musicAcc > 0.55) { s._musicAcc = 0; audio.fifeNote(); }
+    } else if (s.isColorBearer && s.mesh.userData.flag) {
+      var fl = s.mesh.userData.flag;
+      fl.userData.wave = (fl.userData.wave || 0) + dt * 2.2;
+      if (fl.userData.cloth) fl.userData.cloth.rotation.y = Math.sin(fl.userData.wave) * 0.12;
+      if (s.mesh.userData.armR) s.mesh.userData.armR.rotation.set(-0.15, 0, -0.5);
+      if (s.mesh.userData.armL) s.mesh.userData.armL.rotation.set(-0.1, 0, 0.35);
     }
   }
+
+  function tryTransferColors(side) {
+    var arr = side === "union" ? state.union : state.csa;
+    var bearer = null;
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i].isColorBearer) { bearer = arr[i]; break; }
+    }
+    if (bearer && bearer.alive && !bearer.routed) return;
+    // Find dropped flag mesh
+    var flag = bearer && bearer.mesh ? bearer.mesh.userData.flag : null;
+    if (!flag && state._droppedFlag && state._droppedFlag[side]) flag = state._droppedFlag[side];
+    // Nearest living combatant (not musician)
+    var best = null, bestD = 1e9;
+    var fx = flag ? flag.parent ? flag.parent.position.x : (bearer ? bearer.x : 0) : (bearer ? bearer.x : 0);
+    var fz = bearer ? bearer.z : 0;
+    if (flag && flag.parent === scene) { fx = flag.position.x; fz = flag.position.z; }
+    for (var j = 0; j < arr.length; j++) {
+      var s = arr[j];
+      if (!s.alive || s.routed || s.isPlayer || s.isMusician || s.isColorBearer) continue;
+      var d = Math.hypot(s.x - fx, s.z - fz);
+      if (d < bestD) { bestD = d; best = s; }
+    }
+    if (!best || bestD > 14) return;
+    // Transfer role
+    if (bearer) {
+      bearer.isColorBearer = false;
+      bearer.noncombatant = false;
+      if (bearer.mesh) {
+        if (flag && flag.parent === bearer.mesh) bearer.mesh.remove(flag);
+        bearer.mesh.userData.isColor = false;
+        bearer.mesh.userData.flag = null;
+      }
+    }
+    best.isColorBearer = true;
+    best.noncombatant = true;
+    best.loaded = false;
+    best.reloading = false;
+    if (!flag) flag = makeFlag(side);
+    if (flag.parent) flag.parent.remove(flag);
+    if (best.mesh) {
+      // Hide rifle while on colors
+      if (best.mesh.userData.rifle) best.mesh.userData.rifle.visible = false;
+      best.mesh.add(flag);
+      flag.position.set(0.18, 0, -0.02);
+      best.mesh.userData.flag = flag;
+      best.mesh.userData.isColor = true;
+    }
+    if (state._droppedFlag) state._droppedFlag[side] = null;
+    if (side === "union") shout("The colors! Take up the colors!");
+  }
+
+
 
   function applyLineSlots() {
     // If officer placed a custom ground line, keep those union slots
@@ -4218,7 +4991,7 @@
     var built = buildSlotsAlongLine(ax, az, bx, bz, state.lineFlip ? -1 : 1, 10, 1.15, 1.4);
     state.formLine = { ax: ax, az: az, bx: bx, bz: bz, faceYaw: built.faceYaw };
     assignCompanyToSlots(built.slots);
-    if (state.scenario === "gettysburg" && !state.gbBranch) gbTryCommitFromPosition();
+    if (state.scenario === "gettysburg") gbTryCommitFromPosition();
     // Keep preview briefly then clear
     setTimeout(function () { clearDrawPreview(); }, 2500);
   }
@@ -4272,13 +5045,7 @@
         shout("Reform the line!");
       }
     }
-    // CSA autonomous pressure
-    state._csaTimer = (state._csaTimer || 8) - dt;
-    if (state._csaTimer <= 0) {
-      state._csaTimer = 10 + Math.random() * 6;
-      volley("csa");
-      audio.volley();
-    }
+    // CSA fires independently in updateSide (no massed volley timer)
   }
 
   function updateFormation(dt) {
@@ -4315,29 +5082,18 @@
     if (state.formTimer > 0) return;
 
     if (state.formPhase === "halt") {
+      // Independent fire: hold the line while men shoot on their own clocks
+      state.weaponsFree = true;
+      state.officerPhase = "idle";
+      state.orderText = "Hold the line — fire as you will!";
+      state.formTimer = 7.5 + Math.random() * 2;
       state.formPhase = "fire";
-      state.officerPhase = "ready";
-      state.orderText = "MAKE READY!";
-      state.formTimer = 1.2;
       audio.drumPulse();
     } else if (state.formPhase === "fire") {
-      if (state.officerPhase === "ready") {
-        state.officerPhase = "aim";
-        state.orderText = "TAKE AIM!";
-        state.formTimer = 1.0;
-      } else if (state.officerPhase === "aim") {
-        state.officerPhase = "fire";
-        state.orderText = "FIRE!";
-        state.formTimer = 0.8;
-        volley("union");
-        volley("csa");
-        audio.volley();
-      } else {
-        state.formPhase = "reload";
-        state.officerPhase = "idle";
-        state.orderText = "Load! Load!";
-        state.formTimer = 5.5; // shortened AI reload window between advances
-      }
+      state.weaponsFree = true;
+      state.formPhase = "reload";
+      state.orderText = "Keep loading — pour it in!";
+      state.formTimer = 4.5;
     } else if (state.formPhase === "reload") {
       if (enemyWaver && gap <= 70) {
         state.charging = true;
@@ -4428,9 +5184,9 @@
           var pose = soldierPoseForPhase();
           if (s.reloading) pose = "load";
           else if (state.role === "officer" && side === "union") {
-            if (state.companyOrder === "aim" || state.aimedSet) pose = "aim";
-            else if (state.companyOrder === "ready" || state.readySet) pose = "ready";
-            else if (state.charging) pose = "charge";
+            if (state.charging) pose = "charge";
+            else if (state.companyOrder === "ready") pose = "ready";
+            else if (state.weaponsFree && s.loaded) pose = "aim";
             else pose = "shoulder";
           }
           if (s.reloading) {
@@ -4476,19 +5232,42 @@
         continue;
       }
 
-      // Firing discipline
-      s.fireCd -= dt;
-      var canAtWill = false;
-      if (side === "csa") {
-        canAtWill = state.formPhase === "halt" || state.role === "officer";
-      } else if (state.role === "officer") {
-        canAtWill = state.fireAtWill;
-      } else {
-        canAtWill = state.formPhase === "halt" && state.lineHalfGap <= state.minHalfGap + 2;
+      // Musicians & color bearer: stay behind, animate, never fire
+      if (s.noncombatant || s.isMusician || s.isColorBearer) {
+        updateSpecialtySoldier(s, dt, side);
+        continue;
       }
-      if (s.fireCd <= 0 && s.loaded && canAtWill) {
-        if (Math.random() > (wavering ? 0.5 : 0.25)) aiShoot(s);
-        s.fireCd = 6 + Math.random() * 5;
+      // Independent fire — each man on his own reload / settle / jitter clock
+      updateWeaponSway(s, dt, side);
+      s.fireCd -= dt;
+      var authorized = (side === "csa") ? true : !!state.weaponsFree;
+      if (state.charging) authorized = false;
+      if (s.fireCd <= 0 && s.loaded && authorized && !s.woundedDown) {
+        var tgt = nearestEnemy(s);
+        var rangeOk = false;
+        if (tgt) {
+          var rng = Math.hypot(tgt.x - s.x, tgt.z - s.z);
+          rangeOk = rng > 8 && rng < 280;
+        }
+        // Morale / suppression / jitter gate — ripple, never a synced crash
+        var morale = side === "union" ? state.unionMorale : state.csaMorale;
+        var fireChance = 0.55 + (morale / 100) * 0.35 - (sup / 100) * 0.25;
+        if (wavering) fireChance *= 0.7;
+        if (s.veteran) fireChance += 0.08;
+        if (rangeOk && Math.random() < fireChance) {
+          // Brief personal aim settle before the shot
+          s._aimSettle = (s._aimSettle || 0) + dt;
+          if (s._aimSettle >= (0.35 + Math.random() * 0.85) * (s.veteran ? 0.75 : 1)) {
+            aiShoot(s);
+            s._aimSettle = 0;
+            s.fireCd = 0.4 + Math.random() * 1.2;
+          } else {
+            s.fireCd = 0.15 + Math.random() * 0.25;
+          }
+        } else {
+          s.fireCd = 0.6 + Math.random() * 1.8;
+          s._aimSettle = 0;
+        }
       }
     }
   }
@@ -4506,20 +5285,109 @@
     // Rout checks
     maybeRout("union");
     maybeRout("csa");
+    updateRally("union", dt);
+    updateRally("csa", dt);
+    if (state._moraleFlash) {
+      state._moraleFlash.t -= dt;
+      if (state._moraleFlash.t <= 0) state._moraleFlash = null;
+    }
   }
 
   function maybeRout(side) {
     var arr = side === "union" ? state.union : state.csa;
-    var morale = side === "union" ? state.unionMorale : state.csaMorale;
+    var moraleKey = side === "union" ? "unionMorale" : "csaMorale";
+    var stateKey = side === "union" ? "_unionMoraleState" : "_csaMoraleState";
+    var rallyTKey = side === "union" ? "_unionRallyT" : "_csaRallyT";
+    var morale = state[moraleKey];
     var sup = side === "union" ? state.unionSuppression : state.csaSuppression;
     var alive = aliveCount(arr);
-    var ratio = alive / arr.length;
-    if (morale < 18 && ratio < 0.4 && sup > 55) {
+    var ratio = arr.length ? alive / arr.length : 0;
+
+    if (state[stateKey] === "rallying") {
+      // Regroup at colors — casualties stay lost; morale crawls toward ~45–50% cap
+      state[rallyTKey] += 1 / 60; // approx; real dt applied in updateMorale
+      return;
+    }
+
+    if (morale < 18 && ratio < 0.45 && sup > 50 && state[stateKey] !== "broken" && state[stateKey] !== "rallying") {
+      state[stateKey] = "broken";
       for (var i = 0; i < arr.length; i++) {
-        if (arr[i].alive && !arr[i].isPlayer && Math.random() < 0.7) arr[i].routed = true;
+        if (arr[i].alive && !arr[i].isPlayer && !arr[i].noncombatant && Math.random() < 0.75) {
+          arr[i].routed = true;
+        }
       }
-      if (side === "union") state.orderText = "The line is breaking! Rally!";
-      else state.orderText = "They're breaking! Pour it into them!";
+      if (side === "union") state.orderText = "The line is breaking! Fall back on the colors!";
+      else state.orderText = "They're breaking!";
+      // Begin rally after short beat
+      state[rallyTKey] = 0;
+      state[stateKey] = "rallying";
+      // Retreat-to-rally restores 25% of lost morale once
+      restoreMoraleOnRetreat(side, "Rally on the colors");
+      // Pull survivors toward color bearer / specialty slot
+      var bearer = null;
+      for (var j = 0; j < arr.length; j++) {
+        if (arr[j].isColorBearer && arr[j].alive) { bearer = arr[j]; break; }
+      }
+      var rx = bearer ? bearer.x : (side === "union" ? 0 : 0);
+      var rz = bearer ? bearer.z : (side === "union" ? state.lineHalfGap + 8 : -state.lineHalfGap - 8);
+      for (var k = 0; k < arr.length; k++) {
+        var s = arr[k];
+        if (!s.alive || s.isPlayer) continue;
+        if (s.routed || s.noncombatant) {
+          s.slotX = rx + (Math.random() - 0.5) * 6;
+          s.slotZ = rz + (side === "union" ? 1 : -1) * (1 + Math.random() * 2);
+        }
+      }
+    } else if (morale >= 70) {
+      state[stateKey] = "steady";
+    } else if (morale >= 40) {
+      if (state[stateKey] !== "rallying") state[stateKey] = "wavering";
+    } else if (state[stateKey] !== "rallying" && state[stateKey] !== "broken") {
+      state[stateKey] = "wavering";
+    }
+  }
+
+  function updateRally(side, dt) {
+    var stateKey = side === "union" ? "_unionMoraleState" : "_csaMoraleState";
+    if (state[stateKey] !== "rallying") return;
+    var moraleKey = side === "union" ? "unionMorale" : "csaMorale";
+    var arr = side === "union" ? state.union : state.csa;
+    var cap = 48;
+    // Faster if officer nearby and few enemies close
+    var rate = 3.5 * dt;
+    if (side === "union" && state.player && state.player.alive) {
+      var dOff = distToCompany();
+      if (dOff < 25) rate *= 1.6;
+    }
+    var enemies = side === "union" ? state.csa : state.union;
+    var nearE = 0;
+    var c = gbCompanyCentroid ? gbCompanyCentroid() : null;
+    if (!c) c = { x: 0, z: side === "union" ? state.lineHalfGap : -state.lineHalfGap };
+    for (var i = 0; i < enemies.length; i++) {
+      var e = enemies[i];
+      if (!e.alive || e.routed) continue;
+      if (Math.hypot(e.x - c.x, e.z - c.z) < 35) nearE++;
+    }
+    if (nearE === 0) rate *= 1.35;
+    else if (nearE > 6) rate *= 0.55;
+    if (state[moraleKey] < cap) {
+      state[moraleKey] = Math.min(cap, state[moraleKey] + rate);
+    }
+    // Drummer beats assembly while rallying
+    if (side === "union" || side === "csa") {
+      state._rallyDrumAcc = (state._rallyDrumAcc || 0) + dt;
+      if (state._rallyDrumAcc > 0.55) {
+        state._rallyDrumAcc = 0;
+        if (typeof audio !== "undefined" && audio.drumPulse) audio.drumPulse();
+      }
+    }
+    // Clear routed once morale climbs
+    if (state[moraleKey] >= 40) {
+      for (var j = 0; j < arr.length; j++) {
+        if (arr[j].alive && arr[j].routed && !arr[j].isPlayer) arr[j].routed = false;
+      }
+      state[stateKey] = state[moraleKey] >= 70 ? "steady" : "wavering";
+      if (side === "union") state.orderText = "Re-formed on the colors — steady!";
     }
   }
 
@@ -4671,7 +5539,7 @@
       state.crouching = wantCrouch;
     }
 
-    var sprinting = !!(state.keys["ShiftLeft"] || state.keys["ShiftRight"]);
+    var sprinting = !!(state.keys["ShiftLeft"] || state.keys["ShiftRight"] || state.touchSprint);
     if (state.prone || state.crouching || state.aiming || state.bandaging) sprinting = false;
     if (state.stamina <= 1) sprinting = false;
 
@@ -4702,6 +5570,10 @@
     if (state.keys["KeyS"]) f -= 1;
     if (state.keys["KeyA"]) r -= 1;
     if (state.keys["KeyD"]) r += 1;
+    if (state.touchMove) {
+      f += state.touchMove.y || 0;
+      r += state.touchMove.x || 0;
+    }
 
     var nx = p.x, nz = p.z;
     if (f !== 0 || r !== 0) {
@@ -4912,6 +5784,38 @@
     csaMoraleEl.style.width = state.csaMorale + "%";
     unionMoraleEl.style.background = state.unionMorale < 30 ? "#a84838" : state.unionMorale < 55 ? "#b08a30" : "#4a6ea8";
     csaMoraleEl.style.background = state.csaMorale < 30 ? "#a84838" : state.csaMorale < 55 ? "#b08a30" : "#7a7a7a";
+    var uLabel = document.getElementById("unionMoraleState");
+    var cLabel = document.getElementById("csaMoraleState");
+    if (!uLabel) {
+      uLabel = document.createElement("div");
+      uLabel.id = "unionMoraleState";
+      uLabel.style.cssText = "font-size:11px;margin-top:3px;color:#c4a35a";
+      unionMoraleEl.parentNode.parentNode.appendChild(uLabel);
+    }
+    if (!cLabel) {
+      cLabel = document.createElement("div");
+      cLabel.id = "csaMoraleState";
+      cLabel.style.cssText = "font-size:11px;margin-top:3px;color:#c4a35a;text-align:right";
+      csaMoraleEl.parentNode.parentNode.appendChild(cLabel);
+    }
+    uLabel.textContent = moraleStateLabel("union");
+    cLabel.textContent = moraleStateLabel("csa");
+    if (state._moraleFlash && state._moraleFlash.t > 0) {
+      var fl = state._moraleFlash;
+      var flashEl = document.getElementById("moraleFlash");
+      if (!flashEl) {
+        flashEl = document.createElement("div");
+        flashEl.id = "moraleFlash";
+        flashEl.style.cssText = "position:fixed;top:120px;left:50%;transform:translateX(-50%);z-index:19;background:rgba(20,40,16,.88);border:1px solid #c4a35a;padding:6px 14px;border-radius:4px;color:#d8f0b0;font-size:14px;pointer-events:none";
+        document.body.appendChild(flashEl);
+      }
+      flashEl.style.display = "block";
+      flashEl.textContent = (fl.side === "union" ? "Union" : "CSA") + " " + fl.text;
+      flashEl.style.opacity = String(Math.min(1, fl.t));
+    } else {
+      var flashEl2 = document.getElementById("moraleFlash");
+      if (flashEl2) flashEl2.style.display = "none";
+    }
     orderBanner.textContent = state.orderText;
     var ammoEl = document.getElementById("ammoLabel");
     if (ammoEl) ammoEl.textContent = String(state.role === "officer" ? state.revolverAmmo : state.ammo);
@@ -4962,7 +5866,7 @@
       companyHud.textContent = "Company: " + state.companyOrder.toUpperCase() +
         " · Loaded " + countLoaded("union") + " · " +
         (state.readySet ? "READY " : "") + (state.aimedSet ? "AIMED " : "") +
-        (state.fireAtWill ? "AT WILL" : "") +
+        (state.weaponsFree ? "WEAPONS FREE" : "CEASE FIRE") +
         (state.advancing ? " ADVANCING" : "") +
         (state.fallback ? " FALLING BACK" : "") +
         " · " + dCo + " yd from company" + (dCo > SHOUT_RANGE ? " (OUT OF EARSHOT)" : "");
@@ -5601,6 +6505,139 @@
   // Patch applyDamage to inform joiner when host damages a remote proxy matching id
   var _applyDamageBase = null;
 
+
+  // ---- Touch / phone controls (shown only on coarse pointers) ----
+  state.touchMove = state.touchMove || { x: 0, y: 0 };
+  (function initTouchUI() {
+    var ui = document.getElementById("touchUI");
+    if (!ui) return;
+    var coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    var touchCapable = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    state.isTouchUI = !!(coarse || (touchCapable && Math.min(screen.width, screen.height) < 900));
+    if (!state.isTouchUI) return;
+    ui.classList.add("show");
+    document.body.style.touchAction = "none";
+    // Graceful pointer-lock fallback
+    var _rpl = Element.prototype.requestPointerLock || Element.prototype.mozRequestPointerLock;
+    if (_rpl) {
+      Element.prototype.requestPointerLock = function () {
+        try { return _rpl.apply(this, arguments); } catch (e) { return null; }
+      };
+    }
+    var joy = document.getElementById("touchJoy");
+    var knob = document.getElementById("touchJoyKnob");
+    var look = document.getElementById("touchLook");
+    var joyId = null, lookId = null, joyCx = 0, joyCy = 0;
+    function setKnob(dx, dy) {
+      var m = Math.hypot(dx, dy) || 1;
+      var r = Math.min(46, m);
+      knob.style.transform = "translate(" + (dx / m * r) + "px," + (dy / m * r) + "px)";
+    }
+    joy.addEventListener("touchstart", function (e) {
+      e.preventDefault();
+      var t = e.changedTouches[0];
+      joyId = t.identifier;
+      var rect = joy.getBoundingClientRect();
+      joyCx = rect.left + rect.width / 2;
+      joyCy = rect.top + rect.height / 2;
+    }, { passive: false });
+    joy.addEventListener("touchmove", function (e) {
+      e.preventDefault();
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var t = e.changedTouches[i];
+        if (t.identifier !== joyId) continue;
+        var dx = t.clientX - joyCx, dy = t.clientY - joyCy;
+        var m = Math.hypot(dx, dy) || 1;
+        var nx = dx / Math.max(46, m), ny = dy / Math.max(46, m);
+        state.touchMove.x = Math.max(-1, Math.min(1, nx));
+        state.touchMove.y = Math.max(-1, Math.min(1, -ny));
+        setKnob(dx, dy);
+      }
+    }, { passive: false });
+    function endJoy(e) {
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === joyId) {
+          joyId = null; state.touchMove.x = 0; state.touchMove.y = 0;
+          knob.style.transform = "translate(0,0)";
+        }
+      }
+    }
+    joy.addEventListener("touchend", endJoy); joy.addEventListener("touchcancel", endJoy);
+    var lookLX = 0, lookLY = 0;
+    look.addEventListener("touchstart", function (e) {
+      e.preventDefault();
+      var t = e.changedTouches[0];
+      lookId = t.identifier; lookLX = t.clientX; lookLY = t.clientY;
+      state.touchLookActive = true;
+    }, { passive: false });
+    look.addEventListener("touchmove", function (e) {
+      e.preventDefault();
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var t = e.changedTouches[i];
+        if (t.identifier !== lookId) continue;
+        var dx = t.clientX - lookLX, dy = t.clientY - lookLY;
+        lookLX = t.clientX; lookLY = t.clientY;
+        state.yaw -= dx * 0.005;
+        state.pitch -= dy * 0.004;
+        state.pitch = Math.max(-1.2, Math.min(1.2, state.pitch));
+      }
+    }, { passive: false });
+    function endLook(e) {
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === lookId) { lookId = null; state.touchLookActive = false; }
+      }
+    }
+    look.addEventListener("touchend", endLook); look.addEventListener("touchcancel", endLook);
+    function holdBtn(id, on, off) {
+      var el = document.getElementById(id); if (!el) return;
+      el.addEventListener("touchstart", function (e) { e.preventDefault(); el.classList.add("on"); on(); }, { passive: false });
+      el.addEventListener("touchend", function (e) { e.preventDefault(); el.classList.remove("on"); if (off) off(); });
+      el.addEventListener("touchcancel", function () { el.classList.remove("on"); if (off) off(); });
+    }
+    holdBtn("tbFire", function () { if (state.running) tryFire(); });
+    holdBtn("tbAim", function () { state.aiming = true; }, function () { state.aiming = false; });
+    holdBtn("tbReload", function () { beginReload(); });
+    holdBtn("tbSprint", function () { state.touchSprint = true; }, function () { state.touchSprint = false; });
+    holdBtn("tbCrouch", function () { state._crouchSticky = !state._crouchSticky; });
+    holdBtn("tbBandage", function () { beginBandage(); });
+    var orders = document.getElementById("touchOrders");
+    function syncOfficerTouch() {
+      var off = state.role === "officer";
+      if (orders) orders.classList.toggle("show", off && state.running);
+      var d = document.getElementById("tbDraw");
+      var f = document.getElementById("tbFlip");
+      if (d) d.style.display = off ? "flex" : "none";
+      if (f) f.style.display = off ? "flex" : "none";
+    }
+    setInterval(syncOfficerTouch, 500);
+    if (orders) {
+      orders.querySelectorAll("[data-order]").forEach(function (btn) {
+        btn.addEventListener("touchstart", function (e) {
+          e.preventDefault();
+          issueCompanyOrder(btn.getAttribute("data-order"));
+        }, { passive: false });
+      });
+    }
+    var drawing = false;
+    holdBtn("tbDraw", function () {
+      if (state.role !== "officer") return;
+      drawing = true;
+      beginDrawLine(window.innerWidth * 0.5, window.innerHeight * 0.55);
+    }, function () {
+      if (drawing) { endDrawLine(); drawing = false; }
+    });
+    look.addEventListener("touchmove", function (e) {
+      if (!drawing || !state.drawingLine) return;
+      var t = e.changedTouches[0];
+      updateDrawLine(t.clientX, t.clientY);
+    }, { passive: false });
+    holdBtn("tbFlip", function () { flipFormFacing(); });
+    // Show touch UI when game running
+    var _obs = setInterval(function () {
+      if (state.running) ui.classList.add("show");
+    }, 400);
+  })();
+
   window.__WOTS__ = {
     net: net,
     getState: function () { return state; },
@@ -5610,7 +6647,7 @@
     connectNet: connectNet,
     mpBanner: mpBanner,
     start: function (role) {
-      beginGame(role || "private");
+      beginGame(role || "officer");
     },
     startOfficer: function () { beginGame("officer"); },
     hostEnterField: function () {
@@ -5622,10 +6659,16 @@
     },
     startGettysburg: startGettysburgDayOne,
     applyGbBranch: applyGbBranch,
+    beginGbPoint1: beginGbPoint1,
+    beginGbPoint2: beginGbPoint2,
+    beginGbPoint3: beginGbPoint3,
+    setGbPoint: setGbPoint,
     gbHeight: gbHeight,
     gbZoneAt: gbZoneAt,
+    gbNearBrickyard: gbNearBrickyard,
     gbTryCommitFromPosition: gbTryCommitFromPosition,
     placeCompanyOnRidge: placeCompanyOnRidge,
+    GB: GB,
     ensureViewmodel: ensureViewmodel,
     getViewmodel: function () { return viewmodel; },
     getCamera: function () { return camera; },
