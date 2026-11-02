@@ -293,7 +293,7 @@
     <p>Single-player always puts you in as the <b>officer</b>. Host as Officer creates a room; joiners spawn as Union Privates under that officer. Empty slots are AI; Confederates are AI.</p>
     <ul>
       <li><b>Solo Infantry Officer</b> — offline; command the company (orders 1–9 / F line)</li>
-      <li><b>Solo Artillery Officer</b> — offline; command a 4-gun Napoleon battery; infantry AI skirmishes</li>
+      <li><b>Solo Artillery Officer</b> — offline; command <b>Calef's Battery A, 2nd U.S.</b> (six 3-inch Ordnance Rifles); infantry AI skirmishes</li>
       <li><b>Gettysburg Day One</b> — continuous field, three Points; you are the infantry officer</li>
       <li><b>Host as Officer</b> — creates room code · LAN address shown</li>
       <li><b>Join</b> — enter server + room code · Union Private only</li>
@@ -515,6 +515,48 @@
       osc.connect(og); og.connect(this.master);
       osc.start(t); osc.stop(t + 0.15);
     },
+
+    cannonBoom: function (distant) {
+      this.ensure();
+      var t = this.ctx.currentTime;
+      var src = this.ctx.createBufferSource();
+      src.buffer = this.noiseBuffer(distant ? 0.55 : 0.4);
+      var lp = this.ctx.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = distant ? 280 : 420; lp.Q.value = 0.7;
+      var g = this.ctx.createGain();
+      g.gain.setValueAtTime(distant ? 0.35 : 0.7, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + (distant ? 1.2 : 0.85));
+      src.connect(lp); lp.connect(g); g.connect(this.master);
+      src.start(t); src.stop(t + 1.3);
+      var osc = this.ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(distant ? 55 : 70, t);
+      osc.frequency.exponentialRampToValueAtTime(28, t + 0.5);
+      var og = this.ctx.createGain();
+      og.gain.setValueAtTime(distant ? 0.2 : 0.4, t);
+      og.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+      osc.connect(og); og.connect(this.master);
+      osc.start(t); osc.stop(t + 0.65);
+      this.duckBattle(0.9);
+    },
+    horseGallop: function () {
+      this.ensure();
+      var t = this.ctx.currentTime;
+      for (var i = 0; i < 3; i++) {
+        var src = this.ctx.createBufferSource();
+        src.buffer = this.noiseBuffer(0.05);
+        var bp = this.ctx.createBiquadFilter();
+        bp.type = "bandpass"; bp.frequency.value = 180 + i * 40; bp.Q.value = 1.2;
+        var g = this.ctx.createGain();
+        var tt = t + i * 0.09;
+        g.gain.setValueAtTime(0.0001, tt);
+        g.gain.exponentialRampToValueAtTime(0.08, tt + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, tt + 0.06);
+        src.connect(bp); bp.connect(g); g.connect(this.master);
+        src.start(tt); src.stop(tt + 0.07);
+      }
+    },
+
     // Procedural fife — musicians only (not the color bearer)
     fifeNote: function () {
       this.ensure();
@@ -767,10 +809,10 @@
       "</p><p>Open this file in a desktop browser with WebGL enabled.</p>";
     throw err;
   }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.BasicShadowMap; // cheaper than PCFSoft for large OOBs
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
@@ -789,7 +831,7 @@
   var sun = new THREE.DirectionalLight(0xffe2b0, 1.55);
   sun.position.set(48, 72, 28);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(1024, 1024);
   sun.shadow.bias = -0.00025;
   sun.shadow.normalBias = 0.035;
   sun.shadow.camera.near = 10;
@@ -3374,6 +3416,7 @@
     state.gbRearGuard = false;
     setGbPoint(1);
     placeCompanyOnRidge();
+    try { spawnHistoricalDay1Forces(1); } catch (e) { console.warn(e); }
     for (var i = 0; i < state.csa.length; i++) {
       var c = state.csa[i];
       var ang = -0.4 + Math.random() * 0.8;
@@ -3403,6 +3446,7 @@
     state.formPhase = "halt";
     state.companyOrder = "fallback";
     setGbPoint(2, "Fire on the bound — then peel toward town");
+    try { spawnHistoricalDay1Forces(2); } catch (e) { console.warn(e); }
     var baseX = opts.fromSeminary ? GB.seminaryX - 4 : GB.ridgeX + 8;
     var startZ = opts.fromSeminary ? GB.seminaryZ + 2 : GB.ridgeZ - 2;
     var spacing = 1.15;
@@ -3467,6 +3511,7 @@
     setGbPoint(3, opts.early
       ? "Early withdraw — keep closed up; brickyard optional rear guard"
       : "Rear-guard the brickyard or keep one body — crown Cemetery Hill");
+    try { spawnHistoricalDay1Forces(3); } catch (e) { console.warn(e); }
     var spacing = 1.15;
     var baseX = 6;
     var startZ = opts.early ? 6 : GB.zoneTownEntryZ + 4;
@@ -3876,7 +3921,7 @@
     clearDrawPreview();
     state.formLine = null;
     state.formSlots = null;
-    try { clearBattery(); } catch (e) {}
+    try { clearBattery(); clearAiBatteries(); clearCavalry(); } catch (e) {}
 
     state.union = [];
     state.csa = [];
@@ -4095,6 +4140,8 @@
       if (e.code === "Digit2" || e.code === "Numpad2") selectGun(1);
       if (e.code === "Digit3" || e.code === "Numpad3") selectGun(2);
       if (e.code === "Digit4" || e.code === "Numpad4") selectGun(3);
+      if (e.code === "Digit5" || e.code === "Numpad5") selectGun(4);
+      if (e.code === "Digit6" || e.code === "Numpad6") selectGun(5);
       if (e.code === "KeyW") state.artyElev = Math.min(0.35, (state.artyElev || 0) + 0.02);
       if (e.code === "KeyS") state.artyElev = Math.max(-0.05, (state.artyElev || 0) - 0.02);
       return; // infantry company orders are AI in this role
@@ -4179,8 +4226,8 @@
     } else if (role === "artilleryOfficer") {
       companyHud.style.display = "block";
       document.getElementById("hint").innerHTML =
-        "Artillery Officer · Q/E or 1–4 select gun · Wheel/W/S elev · LMB fire · Infantry AI skirmish/cover";
-      spawnUnionBattery();
+        "Calef's Battery A (2nd US) · Q/E or 1–6 select gun · Wheel/W/S elev · LMB fire · Infantry AI skirmish";
+      ensurePlayerCalefBattery();
       enterLooseMode("Battery in action — infantry as skirmishers!");
       // Place player near gun 1
       if (state.player && state.battery && state.battery.guns[0]) {
@@ -4833,6 +4880,22 @@
       if (!e.alive || e.routed) continue;
       var d = (e.x - s.x) * (e.x - s.x) + (e.z - s.z) * (e.z - s.z);
       if (e.isPlayer) d *= 2.8; // AI tends to shoot the line, not the camera hero
+      if (d < bestD) { bestD = d; best = e; }
+    }
+    return best;
+  }
+
+  function nearestEnemySampled(s, stride) {
+    // Subsample enemy list for distant AI (O(n/stride) instead of O(n))
+    var enemies = s.side === "union" ? state.csa : state.union;
+    var best = null, bestD = 1e12;
+    var step = Math.max(2, stride | 0);
+    var start = (_lodFrame + (s._aiSkip || 0)) % step;
+    for (var i = start; i < enemies.length; i += step) {
+      var e = enemies[i];
+      if (!e || !e.alive || e.routed) continue;
+      var d = (e.x - s.x) * (e.x - s.x) + (e.z - s.z) * (e.z - s.z);
+      if (e.isPlayer) d *= 2.8;
       if (d < bestD) { bestD = d; best = e; }
     }
     return best;
@@ -5577,20 +5640,8 @@
   }
 
   function spawnUnionBattery() {
-    clearBattery();
-    // 4-gun section of 12-lb Napoleons behind the Union line, facing CSA (-Z)
-    var guns = [];
-    var baseZ = state.lineHalfGap + 10;
-    var baseX = -9;
-    for (var i = 0; i < 4; i++) {
-      var x = baseX + i * 6.2;
-      var z = baseZ + (i % 2) * 1.2;
-      var gun = makeNapoleonGun(x, z, Math.PI); // face -Z
-      spawnGunCrew(gun, i);
-      guns.push(gun);
-    }
-    state.battery = { guns: guns, selected: 0 };
-    state.artyElev = 0.08;
+    // Historical: Artillery Officer commands Calef's Battery A, 2nd U.S. (six 3-inch Ordnance Rifles)
+    ensurePlayerCalefBattery();
   }
 
   function selectedGun() {
@@ -5611,12 +5662,13 @@
   }
 
   function refreshGunCrewCounts() {
-    if (!state.battery) return;
-    state.battery.guns.forEach(function (g) {
+    function tap(g) {
       var alive = 0;
-      for (var i = 0; i < g.crew.length; i++) if (g.crew[i].alive && !g.crew[i].routed) alive++;
+      for (var i = 0; i < (g.crew || []).length; i++) if (g.crew[i].alive && !g.crew[i].routed) alive++;
       g.crewAlive = alive;
-    });
+    }
+    if (state.battery) state.battery.guns.forEach(tap);
+    (state.aiBatteries || []).forEach(function (b) { (b.guns || []).forEach(tap); });
   }
 
   function updateBatteryLoading(dt) {
@@ -5766,10 +5818,806 @@
     var idx = state.battery.selected + 1;
     var loadTxt = g.loaded ? "LOADED" : ("Loading — " + String(g.loadPhase || "?").toUpperCase());
     var elevDeg = ((g.elev || 0) * 180 / Math.PI).toFixed(1);
-    el.innerHTML = "<b>Battery</b> · Gun " + idx + "/4 · " + loadTxt +
+    el.innerHTML = "<b>" + (state.battery.name || "Battery") + "</b> · Gun " + idx + "/" + state.battery.guns.length + " · " + loadTxt +
       " · Elev " + elevDeg + "° · " + artilleryRangeReadout(g) +
       " · Crew " + g.crewAlive + "/4 · Rd " + g.ammo +
       "<div style='opacity:.75;font-size:11px;margin-top:4px'>Q/E or 1–4 select gun · Wheel/W/S elevation · LMB fire · Infantry AI skirmishing</div>";
+  }
+
+
+  // =====================================================================
+  // Historical force scaling + cavalry + AI batteries (Gettysburg Day 1)
+  // Scale: 1 infantry/cavalry figure ≈ 20 men (documented). Guns 1:1.
+  // Target on-field budget ≈ 300–500 figures with cheap distant AI.
+  // =====================================================================
+  // ---- Cheap LOD meshes (shared geo) for scaled theater forces ----
+  var LOD_DIST_NEAR = 22;   // full mesh + limb anim (compressed Day-1 map)
+  var LOD_DIST_MID = 40;    // cheap mesh, rare AI
+  var LOD_DIST_FAR = 65;    // cheap mesh, skip most AI / sync every other frame
+  var _lodGeoBody = null, _lodGeoHead = null, _lodGeoRifle = null, _lodGeoHorse = null;
+  var _lodMatU = null, _lodMatC = null, _lodMatHorse = null, _lodMatGun = null;
+  function ensureLodMats() {
+    if (_lodGeoBody) return;
+    _lodGeoBody = new THREE.BoxGeometry(0.42, 1.15, 0.28);
+    _lodGeoHead = new THREE.BoxGeometry(0.22, 0.24, 0.22);
+    _lodGeoRifle = new THREE.BoxGeometry(0.04, 0.04, 1.1);
+    _lodGeoHorse = new THREE.BoxGeometry(0.55, 0.9, 1.4);
+    _lodMatU = new THREE.MeshLambertMaterial({ color: 0x2f3f5c });
+    _lodMatC = new THREE.MeshLambertMaterial({ color: 0x6a6a5a });
+    _lodMatHorse = new THREE.MeshLambertMaterial({ color: 0x3a2a1a });
+    _lodMatGun = new THREE.MeshLambertMaterial({ color: 0x222222 });
+  }
+  function makeCheapSoldierMesh(side) {
+    ensureLodMats();
+    var g = new THREE.Group();
+    var body = new THREE.Mesh(_lodGeoBody, side === "union" ? _lodMatU : _lodMatC);
+    body.position.y = 0.95;
+    g.add(body);
+    var head = new THREE.Mesh(_lodGeoHead, side === "union" ? _lodMatU : _lodMatC);
+    head.position.y = 1.68;
+    g.add(head);
+    var rifle = new THREE.Mesh(_lodGeoRifle, _lodMatGun);
+    rifle.position.set(0.22, 1.15, 0.15);
+    rifle.rotation.x = -0.15;
+    g.add(rifle);
+    g.userData.cheapLod = true;
+    return g;
+  }
+  function makeCheapHorseMesh() {
+    ensureLodMats();
+    var g = new THREE.Group();
+    var body = new THREE.Mesh(_lodGeoHorse, _lodMatHorse);
+    body.position.y = 0.7;
+    g.add(body);
+    g.userData.cheapLod = true;
+    return g;
+  }
+  function stripShadows(root) {
+    if (!root) return;
+    root.traverse(function (ch) {
+      if (ch.isMesh) { ch.castShadow = false; ch.receiveShadow = false; }
+    });
+  }
+  function attachLodProxy(s, opts) {
+    opts = opts || {};
+    if (!s || !s.mesh) return;
+    stripShadows(s.mesh);
+    if (s.horseMesh) stripShadows(s.horseMesh);
+    s._lodMesh = makeCheapSoldierMesh(s.side);
+    s._lodMesh.visible = false;
+    scene.add(s._lodMesh);
+    if (s.isCavalry || opts.cavalry) {
+      s._lodHorse = makeCheapHorseMesh();
+      s._lodHorse.visible = false;
+      scene.add(s._lodHorse);
+    }
+    s._lodBand = 0; // 0 near, 1 mid, 2 far
+    s._aiSkip = 0;
+  }
+  function applyLodVisibility(s, camX, camZ, frameN) {
+    if (!s || !s.alive) {
+      if (s && s._lodMesh) s._lodMesh.visible = false;
+      if (s && s._lodHorse) s._lodHorse.visible = false;
+      return 2;
+    }
+    // Player company / specialty / player battery crew keep detail
+    if (s.isPlayer || s._keepDetail || s.isMusician || s.isColorBearer || s.isFifer || s.isDrummer) {
+      if (s.mesh) s.mesh.visible = true;
+      if (s._lodMesh) s._lodMesh.visible = false;
+      if (s._lodHorse) s._lodHorse.visible = false;
+      s._lodBand = 0;
+      return 0;
+    }
+    var dx = s.x - camX, dz = s.z - camZ;
+    var d2 = dx * dx + dz * dz;
+    var band = 0;
+    if (d2 > (LOD_DIST_FAR * LOD_DIST_FAR)) band = 2;
+    else if (d2 > (LOD_DIST_NEAR * LOD_DIST_NEAR)) band = 1;
+    // Cheap-only theater units (no articulated mesh): always band >= 1
+    if (!s.mesh && s._lodMesh) band = Math.max(band, 1);
+    if (d2 > (LOD_DIST_MID * LOD_DIST_MID)) band = Math.max(band, 2);
+    s._lodBand = band;
+    if (s._lodMesh) {
+      s._lodMesh.visible = !!s.alive;
+      s._lodMesh.position.set(s.x, s.y + (s.mounted ? 0.95 : 0), s.z);
+      s._lodMesh.rotation.y = s.faceYaw || 0;
+    }
+    if (s._lodHorse) {
+      s._lodHorse.visible = !!s.alive && !!s.mounted;
+      if (s._lodHorse.visible) {
+        s._lodHorse.position.set(s.x, s.y, s.z);
+        s._lodHorse.rotation.y = s.faceYaw || 0;
+      }
+    }
+    if (s.mesh) s.mesh.visible = false; // theater articulated meshes unused when proxy present
+    if (s.horseMesh) s.horseMesh.visible = false;
+    if (band >= 2 && ((frameN + (s._aiSkip || 0)) % 3) !== 0) return 3;
+    return band;
+  }
+  var _lodFrame = 0;
+  function updateAllLod(dt) {
+    _lodFrame++;
+    var cx = camera.position.x, cz = camera.position.z;
+    var lists = [state.union, state.csa];
+    for (var li = 0; li < lists.length; li++) {
+      var arr = lists[li];
+      for (var i = 0; i < arr.length; i++) {
+        var s = arr[i];
+        if (!s._lodMesh && (s._forceLabel || s.isCavalry || s.isGunner)) {
+          // late attach for any theater unit missing proxy
+          if (s.mesh) attachLodProxy(s, { cavalry: !!s.isCavalry });
+        }
+        if (s._lodMesh || s._forceLabel || s.isCavalry) {
+          applyLodVisibility(s, cx, cz, _lodFrame + i);
+        }
+      }
+    }
+  }
+
+  var FORCE_SCALE = {
+    menPerFigure: 20,
+    // Real engaged strengths (approx) → figure counts at 1:20
+    // 24th Michigan ~496 → player company kept at company detail (~24 = "detachment")
+    playerCompanyFigures: 24,
+    archerBrigade: 60,      // ~1,200 / 20
+    davisBrigade: 50,       // screen portion of ~2,300
+    gambleCavalry: 70,      // ~1,400–1,600 dismounted/mounted effectives / 20
+    devinCavalry: 55,       // ~1,100 / 20
+    csaCavalryScreen: 18,   // scarce CSA cavalry morning Jul 1 — thin picket stand-in
+    // Battery gun counts are historical 1:1
+    calefGuns: 6,           // Battery A, 2nd US — six 3-inch Ordnance Rifles
+    hallGuns: 6,            // Battery B, 2nd Maine — six 3-inch
+    pegramGuns: 4           // Pegram battalion section (Purcell/Crenshaw/Marye stand-in)
+  };
+
+  // Extra GB landmarks mapped to continuous field (west = −X, north = +Z, south/Cemetery = −Z)
+  GB.herrX = -68;
+  GB.herrZ = 14;
+  GB.willoughbyX = -55;
+  GB.willoughbyZ = 12;
+  GB.herbstX = -44;
+  GB.herbstZ = 2;       // south of pike (pikeZ=8)
+  GB.fairfieldZ = -6;   // Fairfield Road approaches south of McPherson
+  GB.devinX = -10;
+  GB.devinZ = 42;       // northern approaches / Carlisle direction
+
+  state.aiBatteries = state.aiBatteries || [];
+  state.cavalry = state.cavalry || { union: [], csa: [] };
+  state.forceScale = FORCE_SCALE;
+
+  function clearAiBatteries() {
+    (state.aiBatteries || []).forEach(function (bat) {
+      (bat.guns || []).forEach(function (g) {
+        if (g.mesh) scene.remove(g.mesh);
+        (g.crew || []).forEach(function (c) {
+          if (c.mesh) scene.remove(c.mesh);
+          // remove from side arrays
+          var arr = c.side === "union" ? state.union : state.csa;
+          var ix = arr.indexOf(c);
+          if (ix >= 0) arr.splice(ix, 1);
+        });
+      });
+    });
+    state.aiBatteries = [];
+  }
+
+  function clearCavalry() {
+    function wipe(list) {
+      (list || []).forEach(function (s) {
+        if (s.mesh) scene.remove(s.mesh);
+        if (s.horseMesh) scene.remove(s.horseMesh);
+        if (s._lodMesh) scene.remove(s._lodMesh);
+        if (s._lodHorse) scene.remove(s._lodHorse);
+        var arr = s.side === "union" ? state.union : state.csa;
+        var ix = arr.indexOf(s);
+        if (ix >= 0) arr.splice(ix, 1);
+      });
+    }
+    wipe(state.cavalry && state.cavalry.union);
+    wipe(state.cavalry && state.cavalry.csa);
+    state.cavalry = { union: [], csa: [] };
+  }
+
+  function makeOrdnanceRifleGun(x, z, yaw, opts) {
+    opts = opts || {};
+    var gun = makeNapoleonGun(x, z, yaw);
+    // Retint barrel darker iron for 3-inch Ordnance Rifle (not bronze Napoleon)
+    if (gun.barrelPivot) {
+      gun.barrelPivot.traverse(function (ch) {
+        if (ch.isMesh && ch.material) {
+          ch.material = ch.material.clone();
+          ch.material.color.setHex(0x2a2a2a);
+          ch.material.metalness = 0.7;
+        }
+      });
+    }
+    gun.gunType = opts.gunType || "ordnance3in";
+    gun.batteryName = opts.batteryName || "Battery";
+    gun.side = opts.side || "union";
+    gun.ai = !!opts.ai;
+    gun.shellAmmo = opts.shellAmmo != null ? opts.shellAmmo : 36;
+    gun.canisterAmmo = opts.canisterAmmo != null ? opts.canisterAmmo : 18;
+    gun.ammo = gun.shellAmmo + gun.canisterAmmo;
+    return gun;
+  }
+
+  function spawnBatteryNamed(spec) {
+    // spec: { name, side, gunType, count, baseX, baseZ, yaw, spacing, ai, crewSide }
+    var guns = [];
+    var yaw = spec.yaw != null ? spec.yaw : (spec.side === "union" ? Math.PI : 0);
+    for (var i = 0; i < spec.count; i++) {
+      var x = spec.baseX + Math.cos(yaw + Math.PI / 2) * (i - (spec.count - 1) / 2) * (spec.spacing || 5.5);
+      var z = spec.baseZ + Math.sin(yaw + Math.PI / 2) * (i - (spec.count - 1) / 2) * (spec.spacing || 5.5);
+      // Prefer high ground nudge
+      var y0 = sampleHeight(x, z);
+      var best = { x: x, z: z, y: y0 };
+      for (var t = 0; t < 6; t++) {
+        var tx = x + (Math.random() - 0.5) * 4;
+        var tz = z + (Math.random() - 0.5) * 4;
+        var ty = sampleHeight(tx, tz);
+        if (ty > best.y + 0.15) best = { x: tx, z: tz, y: ty };
+      }
+      var mk = (spec.gunType === "napoleon") ? makeNapoleonGun : makeOrdnanceRifleGun;
+      var gun = mk(best.x, best.z, yaw, {
+        gunType: spec.gunType || "ordnance3in",
+        batteryName: spec.name,
+        side: spec.side,
+        ai: !!spec.ai
+      });
+      gun.batteryName = spec.name;
+      gun.side = spec.side;
+      gun.ai = !!spec.ai;
+      // Crew (spawnGunCrew pushes onto state.union; rehome for CSA)
+      spawnGunCrew(gun, i);
+      if (spec.side === "csa") {
+        for (var ci = 0; ci < gun.crew.length; ci++) {
+          var s = gun.crew[ci];
+          s.side = "csa";
+          var uix = state.union.indexOf(s);
+          if (uix >= 0) state.union.splice(uix, 1);
+          if (state.csa.indexOf(s) < 0) state.csa.push(s);
+        }
+      }
+      // AI / theater guns: cheaper shadows + LOD proxies on crew
+      if (spec.ai) {
+        stripShadows(gun.mesh);
+        for (var cj = 0; cj < gun.crew.length; cj++) {
+          var cr = gun.crew[cj];
+          if (cr.mesh) { scene.remove(cr.mesh); cr.mesh = null; }
+          cr._lodMesh = makeCheapSoldierMesh(cr.side);
+          cr._lodMesh.position.set(cr.x, cr.y, cr.z);
+          scene.add(cr._lodMesh);
+          cr._lodBand = 1;
+          cr._aiSkip = cj % 3;
+          cr.syncMesh = function () {
+            this.y = sampleHeight(this.x, this.z);
+            if (this._lodMesh) {
+              this._lodMesh.position.set(this.x, this.y, this.z);
+              this._lodMesh.rotation.y = this.faceYaw || 0;
+              this._lodMesh.visible = !!this.alive;
+            }
+          };
+        }
+      }
+      guns.push(gun);
+    }
+    return { name: spec.name, side: spec.side, guns: guns, historical: spec.historical || "" };
+  }
+
+  function fireGunAI(g) {
+    if (!g || !g.loaded || g.fireCd > 0 || g.crewAlive <= 0) return;
+    var enemies = g.side === "union" ? state.csa : state.union;
+    var sx = 0, sz = 0, n = 0;
+    for (var i = 0; i < enemies.length; i++) {
+      var e = enemies[i];
+      if (!e.alive || e.routed || e.isGunner) continue;
+      sx += e.x; sz += e.z; n++;
+    }
+    if (!n) return;
+    sx /= n; sz /= n;
+    var dx = sx - g.x, dz = sz - g.z;
+    var dist = Math.hypot(dx, dz);
+    if (dist < 25 || dist > 320) return;
+    g.yaw = Math.atan2(dx, dz);
+    if (g.mesh) g.mesh.rotation.y = g.yaw;
+    g.elev = Math.max(0.02, Math.min(0.28, dist / 1200));
+    var m = muzzleWorld(g);
+    var useCanister = dist < 90;
+    if (useCanister && g.canisterAmmo <= 0) useCanister = false;
+    if (!useCanister && g.shellAmmo <= 0) return;
+    // Shell: single heavy ray; canister: multiple short rays
+    if (useCanister) {
+      g.canisterAmmo--;
+      for (var k = 0; k < 7; k++) {
+        var dir = m.dir.clone();
+        dir.x += (Math.random() - 0.5) * 0.18;
+        dir.y += (Math.random() - 0.5) * 0.06;
+        dir.z += (Math.random() - 0.5) * 0.18;
+        dir.normalize();
+        fireBall(m.origin, dir, g.side, null, false);
+      }
+    } else {
+      g.shellAmmo--;
+      var shooter = { _accMul: 1.5 };
+      fireBall(m.origin, m.dir, g.side, shooter, false);
+      var impact = m.origin.clone().add(m.dir.clone().multiplyScalar(Math.min(160, dist)));
+      impact.y = sampleHeight(impact.x, impact.z);
+      for (var j = 0; j < enemies.length; j++) {
+        var t = enemies[j];
+        if (!t.alive || t.routed) continue;
+        var d = Math.hypot(t.x - impact.x, t.z - impact.z);
+        if (d < 8) applyDamage(t, 28 + (8 - d) * 6, null, d < 3 ? "torso" : "leg", 0.15);
+      }
+    }
+    g.ammo = g.shellAmmo + g.canisterAmmo;
+    spawnMuzzleFX(m.origin, m.dir, false);
+    if (audio.cannonBoom) audio.cannonBoom(dist > 120);
+    else audio.musketCrack(dist > 100);
+    audio.duckBattle(0.85);
+    g.fireCd = 1.0;
+    beginGunReload(g);
+  }
+
+  function updateAiBatteries(dt) {
+    refreshGunCrewCounts();
+    (state.aiBatteries || []).forEach(function (bat) {
+      (bat.guns || []).forEach(function (g) {
+        // reuse loading logic
+        if (!g.loaded && g.loadPhase !== "loaded") {
+          if (g.crewAlive <= 0) return;
+          var rate = 0.45 + g.crewAlive * 0.18;
+          g.loadT += dt * rate;
+          if (g.loadT >= g.loadDur) {
+            g.loadT = 0;
+            if (g.loadPhase === "sponge") { g.loadPhase = "load"; g.loadDur = 2.2; }
+            else if (g.loadPhase === "load") { g.loadPhase = "ram"; g.loadDur = 2.0; }
+            else if (g.loadPhase === "ram") { g.loadPhase = "prime"; g.loadDur = 1.4; }
+            else if (g.loadPhase === "prime") { g.loadPhase = "loaded"; g.loaded = true; }
+          }
+        }
+        g.fireCd = Math.max(0, (g.fireCd || 0) - dt);
+        if (g.barrelPivot) g.barrelPivot.rotation.x = -(g.elev || 0.08);
+        // Stagger AI fire
+        if (g.loaded && g.fireCd <= 0 && Math.random() < 0.015) fireGunAI(g);
+      });
+    });
+    // Player battery loading already in updateBatteryLoading
+  }
+
+  function makeHorseMesh(side) {
+    var g = new THREE.Group();
+    var hide = new THREE.MeshStandardMaterial({ color: side === "union" ? 0x3a2a1a : 0x2a2218, roughness: 0.9 });
+    var body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 1.35), hide);
+    body.position.y = 0.85;
+    g.add(body);
+    var neck = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.45, 0.35), hide);
+    neck.position.set(0, 1.2, -0.55);
+    g.add(neck);
+    var head = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.4), hide);
+    head.position.set(0, 1.4, -0.85);
+    g.add(head);
+    for (var i = 0; i < 4; i++) {
+      var leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.7, 0.1), hide);
+      leg.position.set((i < 2 ? -0.15 : 0.15), 0.35, (i % 2 === 0 ? 0.4 : -0.4));
+      g.add(leg);
+    }
+    return g;
+  }
+
+  function spawnCavalryTrooper(x, z, side, brigade) {
+    var s = new Soldier(x, z, side, false, {});
+    if (s.mesh) scene.remove(s.mesh);
+    // Cheap-first cavalry: shared Lambert rider+horse (no articulated mesh / detailed horse)
+    s.mesh = null;
+    s.horseMesh = null;
+    s.isCavalry = true;
+    s.cavalryBrigade = brigade;
+    s.mounted = true;
+    s.moveMul = 2.35;
+    s.noncombatant = false;
+    s.y = sampleHeight(x, z);
+    s.slotX = x; s.slotZ = z; s.x = x; s.z = z;
+    s.faceYaw = defaultFaceYaw(side);
+    s._lodMesh = makeCheapSoldierMesh(side);
+    s._lodHorse = makeCheapHorseMesh();
+    s._lodMesh.position.set(x, s.y + 0.95, z);
+    s._lodMesh.rotation.y = s.faceYaw;
+    s._lodHorse.position.set(x, s.y, z);
+    s._lodHorse.rotation.y = s.faceYaw;
+    s._lodMesh.visible = true;
+    s._lodHorse.visible = true;
+    scene.add(s._lodMesh);
+    scene.add(s._lodHorse);
+    s._lodBand = 1;
+    s._aiSkip = (Math.random() * 3) | 0;
+    s.syncMesh = function () {
+      this.y = sampleHeight(this.x, this.z);
+      if (this._lodHorse) {
+        this._lodHorse.position.set(this.x, this.y, this.z);
+        this._lodHorse.rotation.y = this.faceYaw || 0;
+        this._lodHorse.visible = !!this.alive && !!this.mounted;
+      }
+      if (this._lodMesh) {
+        this._lodMesh.position.set(this.x, this.y + (this.mounted ? 0.95 : 0), this.z);
+        this._lodMesh.rotation.y = this.faceYaw || 0;
+        this._lodMesh.visible = !!this.alive;
+      }
+    };
+    if (side === "union") { state.union.push(s); state.cavalry.union.push(s); }
+    else { state.csa.push(s); state.cavalry.csa.push(s); }
+    return s;
+  }
+
+  function spawnCavalryBrigade(spec) {
+    // spec: { side, brigade, count, baseX, baseZ, faceX, faceZ, spreadX, spreadZ }
+    var list = [];
+    var cols = Math.ceil(Math.sqrt(spec.count * 1.6));
+    var n = 0;
+    for (var i = 0; i < spec.count; i++) {
+      var col = i % cols;
+      var row = (i / cols) | 0;
+      var x = spec.baseX + (col - cols / 2) * (spec.spreadX || 2.2);
+      var z = spec.baseZ + row * (spec.spreadZ || 2.0);
+      var s = spawnCavalryTrooper(x, z, spec.side, spec.brigade);
+      var fx = (spec.faceX != null ? spec.faceX : x) - x;
+      var fz = (spec.faceZ != null ? spec.faceZ : z - 20) - z;
+      s.faceYaw = yawFromDir(fx, fz);
+      s._cavPhase = "screen"; // screen | charge | dismount
+      s._cavT = 2 + Math.random() * 4;
+      list.push(s);
+      n++;
+    }
+    return list;
+  }
+
+  function updateCavalryAI(dt) {
+    var groups = [
+      { side: "union", list: state.cavalry.union },
+      { side: "csa", list: state.cavalry.csa }
+    ];
+    groups.forEach(function (g) {
+      var enemyPt = enemyFocusPoint(g.side);
+      for (var i = 0; i < g.list.length; i++) {
+        var s = g.list[i];
+        if (!s.alive || s.routed) continue;
+        // Far cavalry: update every 2nd/3rd frame
+        if ((s._lodBand || 0) >= 2 && ((_lodFrame + i) % 3) !== 0) continue;
+        if ((s._lodBand || 0) === 1 && ((_lodFrame + i) % 2) !== 0) {
+          // mid: still move a bit but skip phase flips
+          var enemyPtFast = enemyPt;
+          var dxF = enemyPtFast.x - s.x, dzF = enemyPtFast.z - s.z;
+          var lenF = Math.hypot(dxF, dzF) || 1;
+          var spdF = s.mounted ? 9.5 : 4.2;
+          s.x += (dxF / lenF) * spdF * dt * 0.15;
+          s.z += (dzF / lenF) * spdF * dt * 0.15;
+          s.syncMesh();
+          continue;
+        }
+        s._cavT -= dt;
+        var dist = Math.hypot(enemyPt.x - s.x, enemyPt.z - s.z);
+        if (s._cavT <= 0) {
+          s._cavT = 3 + Math.random() * 5;
+          if (dist < 55 && Math.random() < 0.45) {
+            s._cavPhase = "charge";
+            s.mounted = true;
+          } else if (dist < 90 && Math.random() < 0.35) {
+            s._cavPhase = "dismount";
+            s.mounted = false;
+            s.moveMul = 1.0;
+          } else {
+            s._cavPhase = "screen";
+            s.mounted = true;
+            s.moveMul = 2.35;
+          }
+        }
+        var spd = s.mounted ? 9.5 : 4.2;
+        if (s._cavPhase === "charge") spd = 14;
+        var dx = enemyPt.x - s.x, dz = enemyPt.z - s.z;
+        var len = Math.hypot(dx, dz) || 1;
+        // Screen: hold a flank offset rather than dive center
+        var flank = (i % 2 === 0 ? 1 : -1) * 18;
+        var px = -dz / len, pz = dx / len;
+        var tx, tz;
+        if (s._cavPhase === "screen") {
+          tx = enemyPt.x - (dx / len) * 70 + px * flank;
+          tz = enemyPt.z - (dz / len) * 70 + pz * flank;
+        } else if (s._cavPhase === "dismount") {
+          // skirmish toward enemy slowly
+          tx = s.x + (dx / len) * 8 + px * ((i % 5) - 2) * 2;
+          tz = s.z + (dz / len) * 8 + pz * ((i % 5) - 2) * 2;
+        } else {
+          tx = enemyPt.x - (dx / len) * 12;
+          tz = enemyPt.z - (dz / len) * 12;
+        }
+        s.slotX = tx; s.slotZ = tz;
+        s.faceYaw = yawFromDir(dx, dz);
+        // Move (cavalry bypasses normal follow speeds somewhat)
+        var follow = Math.min(1, spd * dt / Math.max(1, Math.hypot(tx - s.x, tz - s.z)));
+        s.x += (tx - s.x) * follow;
+        s.z += (tz - s.z) * follow;
+        s.syncMesh();
+        // Carbine fire when dismounted / screening
+        if ((!s.mounted || s._cavPhase === "screen") && s.loaded && !s.reloading) {
+          s.fireCd = (s.fireCd || 0) - dt;
+          if (s.fireCd <= 0 && dist < 160 && dist > 12 && Math.random() < 0.08) {
+            aiShoot(s);
+            s.fireCd = 0.9 + Math.random() * 1.4;
+          }
+        }
+        if (s.mounted && audio.horseGallop && Math.random() < 0.01) audio.horseGallop();
+      }
+    });
+  }
+
+  function spawnHistoricalDay1Forces(point) {
+    // Clear previous theater attachments (keep player infantry from spawnBattle)
+    clearCavalry();
+    clearAiBatteries();
+
+    if (point === 1) {
+      // --- Point 1: McPherson Ridge morning ---
+      // Artillery Officer / player battery = Calef Battery A, 2nd US (6× 3-in Ordnance Rifles)
+      // AI Union: Hall's Battery B, 2nd Maine (relieves Calef ~10am) — spawned for all roles as AI support
+      // AI CSA: Pegram battalion section on Herr Ridge
+      // Cavalry: Gamble on McPherson/west of town along pike; Devin to the north
+
+      // Reposition existing Union infantry (24th Michigan / Iron Brigade) SOUTH of pike in Herbst Woods
+      var ui = 0;
+      for (var i = 0; i < state.union.length; i++) {
+        var u = state.union[i];
+        if (u.isGunner || u.isCavalry) continue;
+        if (u.noncombatant && !u.isPlayer) {
+          // colors/music behind Herbst line
+          u.slotX = GB.herbstX + (u.isDrummer ? -1.6 : u.isFifer ? 1.6 : 0);
+          u.slotZ = GB.herbstZ + 3.2;
+        } else if (!u.isPlayer) {
+          var col = ui % 10;
+          var rank = (ui / 10) | 0;
+          u.slotX = GB.herbstX + (col - 4.5) * 1.15;
+          u.slotZ = GB.herbstZ - rank * 1.4;
+          ui++;
+        } else {
+          u.slotX = GB.herbstX;
+          u.slotZ = GB.herbstZ + 2.4;
+        }
+        u.x = u.slotX; u.z = u.slotZ; u.y = sampleHeight(u.x, u.z);
+        u.faceYaw = yawFromDir(-1, 0.05); // face west toward Herr Ridge / Heth
+        if (u.mesh) { u.mesh.position.set(u.x, u.y + (u.isPlayer ? 0 : 0), u.z); u.mesh.rotation.y = u.faceYaw; }
+        if (u.isPlayer) {
+          state.yaw = Math.atan2(-1, 0.05);
+          camera.position.set(u.x, u.y + 1.65, u.z);
+        }
+        u.syncMesh && u.syncMesh();
+      }
+
+      // Archer west of Willoughby Run / approaching McPherson (south of pike)
+      var ai = 0;
+      for (var j = 0; j < state.csa.length; j++) {
+        var c = state.csa[j];
+        if (c.isGunner || c.isCavalry) continue;
+        if (c.noncombatant) {
+          c.slotX = GB.willoughbyX - 8;
+          c.slotZ = GB.herbstZ - 2;
+        } else {
+          var cc = ai % 10;
+          var rr = (ai / 10) | 0;
+          c.slotX = GB.willoughbyX - 6 - rr * 1.5;
+          c.slotZ = GB.herbstZ - 4 + (cc - 4.5) * 1.2;
+          ai++;
+        }
+        c.x = c.slotX; c.z = c.slotZ; c.y = sampleHeight(c.x, c.z);
+        c.faceYaw = yawFromDir(1, 0);
+        if (c.mesh) { c.mesh.position.set(c.x, c.y, c.z); c.mesh.rotation.y = c.faceYaw; }
+        c.syncMesh && c.syncMesh();
+      }
+
+      // Keep player company + specialty at full detail (no cheap LOD swap)
+      for (var di = 0; di < state.union.length; di++) {
+        var du = state.union[di];
+        if (du.isGunner || du.isCavalry || du._forceLabel) continue;
+        du._keepDetail = true;
+      }
+      for (var dj = 0; dj < state.csa.length; dj++) {
+        var dc = state.csa[dj];
+        if (dc.isGunner || dc.isCavalry || dc._forceLabel) continue;
+        // original small Archer company from spawnBattle stays detailed; extras get LOD via _forceLabel
+        if (!dc._forceLabel) dc._keepDetail = true;
+      }
+
+      // Extra Archer/Davis scaled AI infantry (beyond the player-scale company)
+      function spawnScaledInfantry(side, count, baseX, baseZ, faceYaw, label) {
+        var cols = 10;
+        for (var k = 0; k < count; k++) {
+          var col2 = k % cols;
+          var rank2 = (k / cols) | 0;
+          var x = baseX + (col2 - cols / 2) * 1.15;
+          var z = baseZ - rank2 * 1.35 * (side === "union" ? -1 : 1);
+          var s = new Soldier(x, z, side, false, {});
+          if (s.mesh) scene.remove(s.mesh);
+          // Cheap-first: theater infantry use shared Lambert proxies (full mesh only if upgraded near camera)
+          s.mesh = null;
+          s._forceLabel = label;
+          s.y = sampleHeight(x, z);
+          s.slotX = x; s.slotZ = z; s.x = x; s.z = z;
+          s.faceYaw = faceYaw;
+          s._lodMesh = makeCheapSoldierMesh(side);
+          s._lodMesh.position.set(x, s.y, z);
+          s._lodMesh.rotation.y = faceYaw;
+          s._lodMesh.visible = true;
+          scene.add(s._lodMesh);
+          s._lodBand = 1;
+          s._aiSkip = k % 3;
+          s.syncMesh = function () {
+            this.y = sampleHeight(this.x, this.z);
+            if (this._lodMesh) {
+              this._lodMesh.position.set(this.x, this.y, this.z);
+              this._lodMesh.rotation.y = this.faceYaw || 0;
+              this._lodMesh.visible = !!this.alive;
+            }
+            if (this.mesh) {
+              this.mesh.position.set(this.x, this.y, this.z);
+              this.mesh.rotation.y = this.faceYaw || 0;
+            }
+          };
+          if (side === "union") state.union.push(s); else state.csa.push(s);
+        }
+      }
+      // Davis north of pike / railroad cut
+      spawnScaledInfantry("csa", FORCE_SCALE.davisBrigade, GB.ridgeX - 8, GB.rrCutZ + 6, yawFromDir(1, -0.2), "Davis");
+      // Top up Archer south of pike
+      var archerExtra = Math.max(0, FORCE_SCALE.archerBrigade - ai);
+      spawnScaledInfantry("csa", archerExtra, GB.willoughbyX - 10, GB.herbstZ - 2, yawFromDir(1, 0), "Archer");
+
+      // Gamble — McPherson Ridge along Chambersburg Pike (west of town)
+      spawnCavalryBrigade({
+        side: "union", brigade: "Gamble", count: FORCE_SCALE.gambleCavalry,
+        baseX: GB.ridgeX + 2, baseZ: GB.pikeZ - 2,
+        faceX: GB.herrX, faceZ: GB.pikeZ, spreadX: 2.4, spreadZ: 2.1
+      });
+      // Devin — northern approaches
+      spawnCavalryBrigade({
+        side: "union", brigade: "Devin", count: FORCE_SCALE.devinCavalry,
+        baseX: GB.devinX, baseZ: GB.devinZ,
+        faceX: GB.devinX - 30, faceZ: GB.devinZ + 10, spreadX: 2.5, spreadZ: 2.2
+      });
+      // Scarce CSA mounted screen west on Herr Ridge
+      spawnCavalryBrigade({
+        side: "csa", brigade: "ANV pickets", count: FORCE_SCALE.csaCavalryScreen,
+        baseX: GB.herrX + 4, baseZ: GB.herrZ + 8,
+        faceX: GB.ridgeX, faceZ: GB.pikeZ, spreadX: 2.2, spreadZ: 2.0
+      });
+
+      // Pegram on Herr Ridge (high ground west)
+      state.aiBatteries.push(spawnBatteryNamed({
+        name: "Pegram's Battalion (section)",
+        side: "csa", gunType: "napoleon", count: FORCE_SCALE.pegramGuns,
+        baseX: GB.herrX, baseZ: GB.herrZ, yaw: 0, ai: true,
+        historical: "Pegram's battalion supported Heth from Herr Ridge / west of Willoughby Run (NPS Gettysburg seminar papers; OR)"
+      }));
+
+      // Hall's 2nd Maine Battery B — north of Chambersburg Pike near railroad cut (relieves Calef)
+      state.aiBatteries.push(spawnBatteryNamed({
+        name: "Hall's Battery B, 2nd Maine Light Artillery",
+        side: "union", gunType: "ordnance3in", count: FORCE_SCALE.hallGuns,
+        baseX: GB.ridgeX + 6, baseZ: GB.pikeZ + 5, yaw: Math.PI, ai: true,
+        historical: "Capt. James A. Hall — right of Cashtown/Chambersburg Pike ~400 yd beyond Seminary Hill; monument Chambersburg Pike & Stone Ave (NPS OR Hall; Stone Sentinels)"
+      }));
+
+    } else if (point === 2) {
+      // Seminary fighting withdrawal — leftover Hall/Cooper-style Union guns on seminary; CSA Pegram/McIntosh pressure west
+      state.aiBatteries.push(spawnBatteryNamed({
+        name: "I Corps artillery (Seminary line)",
+        side: "union", gunType: "ordnance3in", count: 4,
+        baseX: GB.seminaryX - 2, baseZ: GB.seminaryZ + 4, yaw: Math.PI, ai: true,
+        historical: "Wainwright's I Corps Artillery Brigade massed near Seminary Ridge afternoon Jul 1 (OR Wainwright; NPS)"
+      }));
+      state.aiBatteries.push(spawnBatteryNamed({
+        name: "Pegram / McIntosh (pursuit)",
+        side: "csa", gunType: "napoleon", count: 4,
+        baseX: GB.ridgeX - 4, baseZ: GB.ridgeZ, yaw: 0, ai: true,
+        historical: "Confederate guns advancing from McPherson/Herr toward Seminary (NPS seminar artillery essay)"
+      }));
+      spawnCavalryBrigade({
+        side: "union", brigade: "Gamble", count: Math.floor(FORCE_SCALE.gambleCavalry * 0.55),
+        baseX: GB.seminaryX - 10, baseZ: GB.seminaryZ - 12,
+        faceX: GB.ridgeX, faceZ: GB.ridgeZ, spreadX: 2.3, spreadZ: 2.0
+      });
+    } else if (point === 3) {
+      // Town / Cemetery — Union guns on Cemetery Hill; CSA pursuing
+      state.aiBatteries.push(spawnBatteryNamed({
+        name: "Cemetery Hill artillery (Hall remnant / XI Corps)",
+        side: "union", gunType: "ordnance3in", count: 4,
+        baseX: GB.hillX - 4, baseZ: GB.hillZ + 8, yaw: Math.PI * 0.15, ai: true,
+        historical: "Hall's remaining guns ordered to heights covering retreat; Cemetery Hill artillery line (OR Hall; NPS)"
+      }));
+      state.aiBatteries.push(spawnBatteryNamed({
+        name: "Early's artillery (pursuit)",
+        side: "csa", gunType: "napoleon", count: 3,
+        baseX: 0, baseZ: GB.townZ + 10, yaw: Math.PI + 0.2, ai: true,
+        historical: "Ewell/Early pursuit into town afternoon Jul 1 (NPS first-day narratives)"
+      }));
+      spawnCavalryBrigade({
+        side: "union", brigade: "Buford screen", count: 24,
+        baseX: GB.hillX - 20, baseZ: GB.hillZ + 20,
+        faceX: GB.brickX, faceZ: GB.brickZ, spreadX: 2.2, spreadZ: 2.0
+      });
+    }
+  }
+
+  function ensurePlayerCalefBattery() {
+    // Artillery Officer commands Calef's Battery A, 2nd U.S. Artillery — six 3-inch Ordnance Rifles
+    clearBattery();
+    var onGb = state.scenario === "gettysburg";
+    var bat = spawnBatteryNamed({
+      name: "Calef's Battery A, 2nd U.S. Artillery",
+      side: "union", gunType: "ordnance3in", count: FORCE_SCALE.calefGuns,
+      // Right section N of pike, left S of pike (monument text)
+      baseX: onGb ? (GB.ridgeX + 4) : -9,
+      baseZ: onGb ? GB.pikeZ : (state.lineHalfGap + 8),
+      yaw: Math.PI, ai: false,
+      historical: "Lt. John H. Calef — six 3-inch Ordnance Rifles; right section right of Chambersburg Pike, left on left; first Union gun of the battle (Stone Sentinels Battery A monuments; HMDB; OR/Calef narrative)"
+    });
+    // spawnBatteryNamed pushed crew to union and created guns — assign to player battery
+    state.battery = { guns: bat.guns, selected: 0, name: bat.name, historical: bat.historical };
+    state.artyElev = 0.08;
+    // Player battery keeps full crew detail
+    bat.guns.forEach(function (g) {
+      (g.crew || []).forEach(function (c) { c._keepDetail = true; });
+    });
+    // Split sections across pike: first 3 north (+z), last 3 south (−z) of pike
+    for (var i = 0; i < bat.guns.length; i++) {
+      var g = bat.guns[i];
+      var north = i < 3;
+      var pike = onGb ? GB.pikeZ : (state.lineHalfGap + 8);
+      var ridge = onGb ? GB.ridgeX : -9;
+      g.z = pike + (north ? 4 + (i % 3) * 0.3 : -4 - (i % 3) * 0.3);
+      g.x = ridge + 2 + (i % 3) * 5.5;
+      if (g.mesh) {
+        g.mesh.position.set(g.x, sampleHeight(g.x, g.z), g.z);
+        g.mesh.rotation.y = g.yaw;
+      }
+      // Re-seat crew
+      for (var c = 0; c < g.crew.length; c++) {
+        var trooper = g.crew[c];
+        var ox = (c % 2 === 0 ? -1.3 : 1.3);
+        var oz = (c < 2 ? 0.6 : 1.5);
+        trooper.x = g.x + ox; trooper.z = g.z + oz;
+        trooper.slotX = trooper.x; trooper.slotZ = trooper.z;
+        trooper.y = sampleHeight(trooper.x, trooper.z);
+        trooper.syncMesh && trooper.syncMesh();
+      }
+    }
+  }
+
+  function countForces() {
+    function tally(arr) {
+      var o = { infantry: 0, cavalry: 0, gunners: 0, specialty: 0, total: 0 };
+      for (var i = 0; i < arr.length; i++) {
+        var s = arr[i];
+        if (!s.alive) continue;
+        o.total++;
+        if (s.isCavalry) o.cavalry++;
+        else if (s.isGunner) o.gunners++;
+        else if (s.noncombatant) o.specialty++;
+        else o.infantry++;
+      }
+      return o;
+    }
+    var ug = 0, cg = 0;
+    if (state.battery) ug += state.battery.guns.length;
+    (state.aiBatteries || []).forEach(function (b) {
+      if (b.side === "union") ug += b.guns.length; else cg += b.guns.length;
+    });
+    return {
+      scale: FORCE_SCALE.menPerFigure,
+      union: tally(state.union),
+      csa: tally(state.csa),
+      gunsUnion: ug,
+      gunsCsa: cg,
+      batteries: (state.aiBatteries || []).map(function (b) { return b.name + " (" + b.guns.length + ")"; }).concat(
+        state.battery ? [state.battery.name + " (" + state.battery.guns.length + ", player)"] : []
+      )
+    };
   }
 
 
@@ -5909,6 +6757,11 @@
     updateFormation(dt);
     updateSide(state.union, "union", dt);
     updateSide(state.csa, "csa", dt);
+    try {
+      updateCavalryAI(dt);
+      updateAiBatteries(dt);
+    } catch (e) {}
+    try { updateAllLod(dt); } catch (e) {}
   }
 
   function updateSide(arr, side, dt) {
@@ -5954,6 +6807,12 @@
         var followSpd = forming ? 6.5 : follow;
         if (s.limp) followSpd *= (1 - 0.5 * s.limp);
         if (s.crawl || s.reloading) followSpd *= 0.45;
+        // Far LOD: half-rate position/height updates
+        if ((s._lodBand || 0) >= 2 && !s._keepDetail && ((_lodFrame + i) % 2)) {
+          s.x += (s.slotX + jig - s.x) * Math.min(1, followSpd * dt);
+          s.z += (s.slotZ - s.z) * Math.min(1, followSpd * dt);
+          continue;
+        }
         s.x += (s.slotX + jig - s.x) * Math.min(1, followSpd * dt);
         s.z += (s.slotZ - s.z) * Math.min(1, followSpd * dt);
         s.y = sampleHeight(s.x, s.z);
@@ -5977,12 +6836,23 @@
             s.mesh.userData.flinchT = s._flinchT;
             s._flinchT -= dt;
           }
-          poseSoldierRifle(s.mesh, pose, s.side);
-          var moveAnim = s.reloading ? false : (typeof isMoving === "boolean" ? isMoving : (marching || state.advancing || state.fallback));
-          animateSoldier(s.mesh, dt * (s.limp ? 0.7 : 1), moveAnim, pose);
-          if (s.reloading) {
-            var hp2 = handPoseForReloadStep(s.mesh.userData.reloadStepId || "ram");
-            syncSoldierHands(s.mesh, hp2.L, hp2.R, dt);
+          var band = s._lodBand || 0;
+          if (band >= 1 && !s.reloading && !s._keepDetail) {
+            // Cheap LOD: skip pose/limb work; proxy mesh already positioned
+            if (s.mesh) s.mesh.rotation.y = s.faceYaw || s.mesh.rotation.y;
+          } else {
+            poseSoldierRifle(s.mesh, pose, s.side);
+            var moveAnim = s.reloading ? false : (typeof isMoving === "boolean" ? isMoving : (marching || state.advancing || state.fallback));
+            // LOD: skip full limb anim beyond ~55 yd (or when using cheap proxy)
+            if (band === 0 || s.reloading) {
+              animateSoldier(s.mesh, dt * (s.limp ? 0.7 : 1), moveAnim, pose);
+            } else if (s.mesh) {
+              s.mesh.rotation.y = s.faceYaw || s.mesh.rotation.y;
+            }
+            if (s.reloading) {
+              var hp2 = handPoseForReloadStep(s.mesh.userData.reloadStepId || "ram");
+              syncSoldierHands(s.mesh, hp2.L, hp2.R, dt);
+            }
           }
         }
       } else {
@@ -6012,6 +6882,10 @@
         continue;
       }
 
+      // Cavalry driven by updateCavalryAI
+      if (s.isCavalry) {
+        continue;
+      }
       // Gunners stay on their piece (loading anim handled in updateBatteryLoading)
       if (s.isGunner) {
         s.x += (s.slotX - s.x) * Math.min(1, 4 * dt);
@@ -6026,12 +6900,32 @@
         continue;
       }
       // Independent fire — each man on his own reload / settle / jitter clock
-      updateWeaponSway(s, dt, side);
+      // Far LOD: cheaper AI — skip sway + subsample targeting
+      if ((s._lodBand || 0) >= 2 && !s._keepDetail) {
+        s.fireCd = (s.fireCd || 0) - dt;
+        if (s.fireCd <= 0 && s.loaded && ((side === "csa") || state.weaponsFree) && !state.charging) {
+          if (Math.random() < 0.25) {
+            var tgtFar = nearestEnemySampled(s, 12);
+            if (tgtFar) {
+              var rngFar = Math.hypot(tgtFar.x - s.x, tgtFar.z - s.z);
+              if (rngFar > 8 && rngFar < 280 && Math.random() < 0.4) aiShoot(s);
+            }
+          }
+          s.fireCd = 1.2 + Math.random() * 2.2;
+        }
+        continue;
+      }
+      if ((s._lodBand || 0) >= 1 && !s._keepDetail) {
+        // Mid: lighter sway
+        s.swayT = (s.swayT || 0) + dt;
+      } else {
+        updateWeaponSway(s, dt, side);
+      }
       s.fireCd -= dt;
       var authorized = (side === "csa") ? true : !!state.weaponsFree;
       if (state.charging) authorized = false;
       if (s.fireCd <= 0 && s.loaded && authorized && !s.woundedDown) {
-        var tgt = nearestEnemy(s);
+        var tgt = ((s._lodBand || 0) >= 1) ? nearestEnemySampled(s, 18) : nearestEnemy(s);
         var rangeOk = false;
         if (tgt) {
           var rng = Math.hypot(tgt.x - s.x, tgt.z - s.z);
@@ -7477,6 +8371,10 @@
     enterFormationMode: enterFormationMode,
     assignLooseCoverTargets: assignLooseCoverTargets,
     spawnUnionBattery: spawnUnionBattery,
+    ensurePlayerCalefBattery: ensurePlayerCalefBattery,
+    spawnHistoricalDay1Forces: spawnHistoricalDay1Forces,
+    countForces: countForces,
+    FORCE_SCALE: FORCE_SCALE,
     selectGun: selectGun,
     fireSelectedGun: fireSelectedGun,
     gbHeight: gbHeight,
