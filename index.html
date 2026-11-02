@@ -541,73 +541,165 @@
       osc.start(t); osc.stop(t + 0.3);
     },
 
-    // 1914 Victor "Battle Cry of Freedom" — HTMLAudio loop, ducked under gunfire
+    // Battle music — continuous multi-track HTMLAudio (+ WebAudio on mobile).
+    // Only M / MUSIC cycles tracks or turns music off; never pause on points/menus.
+    battleTracks: [
+      { id: "battlecry", src: "audio/battle_cry_of_freedom_1914.mp3", label: "Battle Cry of Freedom (1914)" },
+      { id: "memories", src: "audio/memories_of_the_war_1915.mp3", label: "Memories of the War (1915)" }
+    ],
+    battleTrackIndex: 0, // 0..n-1 = playing track; n = off
     battle: null,
+    battleCache: {},
+    battleNodes: {},
     battleEnabled: true,
-    battleWanted: false, // true once a Point has begun (after unlock)
     battleUnlocked: false,
-    battleBaseVol: 0.28,
+    battlePendingPlay: false,
+    battleUseWebAudio: false,
+    battleBaseVol: 0.6,
+    battleDuckMul: 0.45,
     battleDuckUntil: 0,
-    ensureBattle: function () {
-      if (this.battle) return this.battle;
-      var a = new Audio("audio/battle_cry_of_freedom_1914.mp3");
+    currentBattleTrack: function () {
+      if (this.battleTrackIndex < 0 || this.battleTrackIndex >= this.battleTracks.length) return null;
+      return this.battleTracks[this.battleTrackIndex];
+    },
+    battleLabel: function () {
+      var t = this.currentBattleTrack();
+      return t ? t.label : "Music off";
+    },
+    isMobileish: function () {
+      try {
+        return /Mobi|Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent || "") ||
+          (typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 1);
+      } catch (e) { return false; }
+    },
+    ensureBattleFor: function (track) {
+      if (!track) return null;
+      if (this.battleCache[track.id]) return this.battleCache[track.id];
+      var a = new Audio(track.src);
       a.loop = true;
       a.preload = "auto";
+      try { a.crossOrigin = "anonymous"; } catch (e) {}
       a.volume = this.battleBaseVol;
-      this.battle = a;
+      this.battleCache[track.id] = a;
       return a;
+    },
+    routeViaWebAudio: function (a, trackId) {
+      if (!this.battleUseWebAudio || !a) return;
+      this.ensure();
+      if (this.battleNodes[trackId]) return;
+      try {
+        var src = this.ctx.createMediaElementSource(a);
+        var g = this.ctx.createGain();
+        g.gain.value = 1;
+        src.connect(g);
+        g.connect(this.master);
+        this.battleNodes[trackId] = { src: src, gain: g };
+      } catch (e) {
+        // Already connected or unsupported
+      }
+    },
+    applyBattleVolume: function (mul) {
+      if (mul == null) mul = 1;
+      if (this.battle) {
+        try { this.battle.volume = Math.max(0.08, this.battleBaseVol * mul); } catch (e) {}
+      }
+    },
+    _playBattleEl: function (a) {
+      var self = this;
+      if (!a) return;
+      a.loop = true;
+      this.applyBattleVolume(1);
+      var p = null;
+      try { p = a.play(); } catch (e) { this.battlePendingPlay = true; return; }
+      if (p && p.then) {
+        p.then(function () { self.battlePendingPlay = false; }).catch(function () {
+          self.battlePendingPlay = true;
+        });
+      } else {
+        this.battlePendingPlay = false;
+      }
+    },
+    ensureBattle: function () {
+      var track = this.currentBattleTrack();
+      if (!track) { this.battle = null; return null; }
+      var a = this.ensureBattleFor(track);
+      this.battle = a;
+      if (this.battleUseWebAudio) this.routeViaWebAudio(a, track.id);
+      return a;
+    },
+    pauseAllBattle: function () {
+      var cache = this.battleCache;
+      Object.keys(cache).forEach(function (id) {
+        try { cache[id].pause(); } catch (e) {}
+      });
+    },
+    tryAutoplayBattle: function () {
+      this.battleUnlocked = true;
+      if (this.isMobileish()) this.battleUseWebAudio = true;
+      this.ensure();
+      try { if (this.ctx && this.ctx.state === "suspended") this.ctx.resume(); } catch (e) {}
+      if (!this.battleEnabled) return;
+      var a = this.ensureBattle();
+      if (a) this._playBattleEl(a);
     },
     unlockBattle: function () {
       this.battleUnlocked = true;
-      this.ensureBattle();
-      // Silent unlock attempt (autoplay policy); real play when a point begins
-      var a = this.battle;
-      try {
-        var p = a.play();
-        if (p && p.then) p.then(function () { a.pause(); a.currentTime = 0; }).catch(function () {});
-      } catch (e) {}
-    },
-    startBattleMusic: function () {
-      this.battleWanted = true;
-      if (!this.battleEnabled || !this.battleUnlocked) return;
+      if (this.isMobileish()) this.battleUseWebAudio = true;
       this.ensure();
+      try { if (this.ctx && this.ctx.state === "suspended") this.ctx.resume(); } catch (e) {}
+      if (!this.battleEnabled) return;
       var a = this.ensureBattle();
-      a.volume = this.battleBaseVol;
-      var p = a.play();
-      if (p && p.catch) p.catch(function () {});
+      if (a) this._playBattleEl(a);
     },
-    stopBattleMusic: function () {
-      this.battleWanted = false;
-      if (this.battle) { try { this.battle.pause(); } catch (e) {} }
+    // Kept for older callers — music is continuous; this only ensures playback.
+    startBattleMusic: function () {
+      if (!this.battleEnabled) return;
+      this.unlockBattle();
+    },
+    // No-op: scene/point/menu transitions must never stop music.
+    stopBattleMusic: function () {},
+    cycleBattleMusic: function () {
+      this.pauseAllBattle();
+      this.battleTrackIndex = (this.battleTrackIndex + 1) % (this.battleTracks.length + 1);
+      if (this.battleTrackIndex >= this.battleTracks.length) {
+        this.battleEnabled = false;
+        this.battle = null;
+        this.battlePendingPlay = false;
+        return { enabled: false, label: "Music off" };
+      }
+      this.battleEnabled = true;
+      var a = this.ensureBattle();
+      if (a) {
+        try { a.currentTime = 0; } catch (e) {}
+        this._playBattleEl(a);
+      }
+      return { enabled: true, label: this.battleLabel() };
     },
     toggleBattleMusic: function () {
-      this.battleEnabled = !this.battleEnabled;
-      if (!this.battleEnabled) {
-        if (this.battle) try { this.battle.pause(); } catch (e) {}
-      } else if (this.battleWanted && this.battleUnlocked) {
-        this.startBattleMusic();
-      }
-      return this.battleEnabled;
+      return this.cycleBattleMusic().enabled;
     },
     duckBattle: function (seconds) {
       seconds = seconds || 0.45;
       this.battleDuckUntil = Math.max(this.battleDuckUntil || 0, (typeof performance !== "undefined" ? performance.now() : Date.now()) + seconds * 1000);
-      if (this.battle && !this.battle.paused) {
-        this.battle.volume = Math.max(0.04, this.battleBaseVol * 0.22);
-      }
+      this.applyBattleVolume(this.battleDuckMul);
     },
     tickBattleDuck: function () {
       if (!this.battle || this.battle.paused || !this.battleEnabled) return;
       var now = (typeof performance !== "undefined" ? performance.now() : Date.now());
       if (now < (this.battleDuckUntil || 0)) {
-        this.battle.volume = Math.max(0.04, this.battleBaseVol * 0.22);
+        this.applyBattleVolume(this.battleDuckMul);
       } else {
-        // ease back
         var v = this.battle.volume;
         var target = this.battleBaseVol;
-        this.battle.volume = v + (target - v) * 0.08;
+        this.battle.volume = v + (target - v) * 0.1;
       }
     },
+    keepBattleAlive: function () {
+      if (!this.battleEnabled || !this.battleUnlocked) return;
+      var a = this.ensureBattle();
+      if (a && a.paused) this._playBattleEl(a);
+    },
+
     shout: function () {
       this.ensure();
       var t = this.ctx.currentTime;
@@ -3024,9 +3116,7 @@
     if (point === 1) { state.gbRegiment = "24th Michigan"; state.gbBrigade = "Iron Brigade (Meredith)"; state.gbEnemy = "Archer's Brigade"; }
     else if (point === 2) { state.gbRegiment = "24th Michigan"; state.gbBrigade = "Iron Brigade remnant"; state.gbEnemy = "Pettigrew / Pender"; }
     else if (point === 3) { state.gbRegiment = "154th New York"; state.gbBrigade = "Coster's Brigade"; state.gbEnemy = "Early / Rodes pursuit"; }
-    if (point > 0 && typeof audio !== "undefined" && audio.startBattleMusic) {
-      audio.startBattleMusic();
-    }
+    // Battle music is continuous from load — not started/stopped by point changes.
     var meta = GB_POINT_META[point] || { day: 1, title: "Gettysburg", obj: "" };
     state.gbPointObj = objOverride || meta.obj;
     var el = document.getElementById("gbPoint");
@@ -3967,10 +4057,10 @@
     if (e.code === "Digit7" || e.code === "Numpad7") issueCompanyOrder("charge");
     if (e.code === "Digit8" || e.code === "Numpad8") issueCompanyOrder("fallback");
     if (e.code === "KeyM") {
-      var on = audio.toggleBattleMusic();
-      state.orderText = on ? "Battle music on (M)" : "Battle music muted (M)";
+      var r = audio.cycleBattleMusic();
+      state.orderText = r.label + " (M)";
       var tm = document.getElementById("tbMusic");
-      if (tm) tm.classList.toggle("on", on);
+      if (tm) tm.classList.toggle("on", r.enabled);
     }
     if (e.code === "KeyF") {
       var now = performance.now();
@@ -6683,10 +6773,10 @@
     holdBtn("tbCrouch", function () { state._crouchSticky = !state._crouchSticky; });
     holdBtn("tbBandage", function () { beginBandage(); });
     holdBtn("tbMusic", function () {
-      var on = audio.toggleBattleMusic();
+      var r = audio.cycleBattleMusic();
       var tm = document.getElementById("tbMusic");
-      if (tm) tm.classList.toggle("on", on);
-      state.orderText = on ? "Battle music on" : "Battle music muted";
+      if (tm) tm.classList.toggle("on", r.enabled);
+      state.orderText = r.label;
     });
     var orders = document.getElementById("touchOrders");
     function syncOfficerTouch() {
@@ -6727,16 +6817,21 @@
   })();
 
 
-  // Browser autoplay: unlock battle music on first gesture, start when a Point begins
-  (function bindAudioUnlock() {
-    var once = function () {
-      if (audio.battleUnlocked) return;
+  // Continuous battle music: try autoplay on load; retry on first gesture if blocked.
+  (function bindBattleMusicContinuous() {
+    try { audio.tryAutoplayBattle(); } catch (e) {}
+    var kick = function () {
       audio.unlockBattle();
-      if (audio.battleWanted) audio.startBattleMusic();
+      if (audio.battlePendingPlay || (audio.battleEnabled && audio.battle && audio.battle.paused)) {
+        audio.unlockBattle();
+      }
     };
-    window.addEventListener("pointerdown", once, { passive: true });
-    window.addEventListener("keydown", once, { passive: true });
-    window.addEventListener("touchstart", once, { passive: true });
+    window.addEventListener("pointerdown", kick, { passive: true });
+    window.addEventListener("keydown", kick, { passive: true });
+    window.addEventListener("touchstart", kick, { passive: true });
+    window.addEventListener("click", kick, { passive: true });
+    // Keep looping track alive if the browser pauses it (never stop on scene changes).
+    setInterval(function () { try { audio.keepBattleAlive(); } catch (e) {} }, 2500);
   })();
   window.__WOTS__ = {
     net: net,
