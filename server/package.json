@@ -1,0 +1,17 @@
+{
+  "name": "war-of-the-states-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lobby + relay for War of the States (host-authoritative multiplayer)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "check": "node --check index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

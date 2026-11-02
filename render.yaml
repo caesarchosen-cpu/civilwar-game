@@ -1,0 +1,17 @@
+# Deploy on Render.com (free web service)
+# Dashboard: New → Blueprint → this repo, or create Web Service with:
+#   Root Directory: server
+#   Build: npm install
+#   Start: npm start
+services:
+  - type: web
+    name: war-of-the-states
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 8787
+    # Static game is served from ../prototype relative to server/
